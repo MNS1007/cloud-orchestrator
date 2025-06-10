@@ -1,0 +1,6 @@
+iam.create_sa: agents.worker_hub_agent
+cloudrun.deploy_service: agents.worker_hub_agent
+guard.check_budget: agents.guard_agent
+guard.check_quota: agents.guard_agent
+
+# New to add a line for new tool we write
