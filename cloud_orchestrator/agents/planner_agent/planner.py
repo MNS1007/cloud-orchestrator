@@ -13,7 +13,7 @@ class PlannerAgent(LlmAgent):
         creds_path = pathlib.Path(__file__).parents[3] / "creds" / "worker.json"
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(creds_path)
         # Set the project ID explicitly
-        os.environ["GOOGLE_CLOUD_PROJECT"] = "cloud4bp"
+        os.environ["GOOGLE_CLOUD_PROJECT"] = "gold-contact-460301-u4"
         print(f"Using credentials from: {os.environ['GOOGLE_APPLICATION_CREDENTIALS']}")
         print(f"Using project: {os.environ['GOOGLE_CLOUD_PROJECT']}")
         
