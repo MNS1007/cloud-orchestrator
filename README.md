@@ -1,6 +1,6 @@
 # Cloud Orchestrator
 
-A powerful cloud operations automation platform that uses AI agents to plan and execute cloud operations.
+A powerful cloud operations automation platform that uses AI agents to plan and execute cloud operations. Amazing stuff.
 
 ## Prerequisites
 
