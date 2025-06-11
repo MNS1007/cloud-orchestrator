@@ -17,6 +17,7 @@ A powerful cloud operations automation platform that uses AI agents to plan and 
    ```bash
    git clone <repository-url>
    cd cloud-orchestrator
+   cd cloud_orchestrator
    ```
 
 2. **Set up Google Cloud credentials**
