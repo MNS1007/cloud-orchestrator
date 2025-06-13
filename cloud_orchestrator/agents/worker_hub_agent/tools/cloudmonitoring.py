@@ -1,10 +1,10 @@
-
 import json, os, subprocess, tempfile
 from typing import Dict, List
 from google.adk.tools import FunctionTool
 
 
 def _gcloud(cmd: List[str]) -> str:
+    """Helper function to execute gcloud commands."""
     return subprocess.check_output(cmd, text=True, stderr=subprocess.STDOUT)
 
 @FunctionTool
@@ -14,29 +14,36 @@ def create_dashboard(
     service_name: str,
     region: str = "us-central1",
 ) -> Dict[str, str]:
-    """Create a 95-percentile latency dashboard for a Cloud Run service."""
+    """Create a 95-percentile latency dashboard for a Cloud Run service.
+
+    The dashboard JSON structure has been updated to align with the Google Cloud
+    Monitoring API's expected format, using 'gridLayout' and 'widgets'.
+    """
     dashboard_json = {
         "displayName": dashboard_display_name,
-        "charts": [{
-            "title": "95 % latency",
-            "xyChart": {
-                "dataSets": [{
-                    "timeSeriesQuery": {
-                        "timeSeriesFilter": {
-                            "filter": (
-                                'metric.type="run.googleapis.com/request_latencies" '
-                                f'resource.label."service_name"="{service_name}" '
-                                f'resource.label."location"="{region}"'
-                            ),
-                            "aggregation": {
-                                "alignmentPeriod": "300s",
-                                "perSeriesAligner": "ALIGN_PERCENTILE_95"
+        "gridLayout": { # Changed from "charts" to "gridLayout"
+            "columns": 1, # Define a single-column layout for simplicity
+            "widgets": [{ # Charts are now defined as "widgets" within the layout
+                "title": "95 % latency",
+                "xyChart": {
+                    "dataSets": [{
+                        "timeSeriesQuery": {
+                            "timeSeriesFilter": {
+                                "filter": (
+                                    'metric.type="run.googleapis.com/request_latencies" '
+                                    f'resource.label."service_name"="{service_name}" '
+                                    f'resource.label."location"="{region}"'
+                                ),
+                                "aggregation": {
+                                    "alignmentPeriod": "300s",
+                                    "perSeriesAligner": "ALIGN_PERCENTILE_95"
+                                }
                             }
                         }
-                    }
-                }]
-            }
-        }]
+                    }]
+                }
+            }]
+        }
     }
 
     with tempfile.NamedTemporaryFile("w+", suffix=".json", delete=False) as tmp:
@@ -46,7 +53,7 @@ def create_dashboard(
             name = _gcloud([
                 "gcloud", "beta", "monitoring", "dashboards", "create",
                 f"--project={project_id}",
-                f"--config={tmp.name}",
+                f"--config-from-file={tmp.name}",
                 "--format=value(name)"
             ]).strip()
             return {"status": "success", "dashboard_name": name}
