@@ -17,6 +17,7 @@ A powerful cloud operations automation platform that uses AI agents to plan and 
    ```bash
    git clone <repository-url>
    cd cloud-orchestrator
+   cd cloud_orchestrator
    ```
 
 2. **Set up Google Cloud credentials**
@@ -40,12 +41,9 @@ cloud-orchestrator/
 ├── cloud_orchestrator/
 │   ├── agents/                 # Agent implementations
 │   │   ├── planner_agent/     # Planning agent
-│   │   ├── gcp_agent/         # GCP operations agent
-│   │   └── aws_agent/         # AWS operations agent
 │   ├── tools/                 # Tool implementations
-│   │   ├── gcp_tools/        # GCP-specific tools
-│   │   └── aws_tools/        # AWS-specific tools
-│   └── capabilities.yaml      # Agent capabilities definition
+│   │   ├── gcp_tools/        # service-specific tools
+│   └── capabilities.yaml      
 ├── creds/                     # Credentials directory
 │   └── worker.json           # Service account key
 └── requirements.txt          # Python dependencies
