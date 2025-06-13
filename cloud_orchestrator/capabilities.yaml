@@ -1,6 +1,16 @@
-iam.create_sa: agents.worker_hub_agent
-cloudrun.deploy_service: agents.worker_hub_agent
-guard.check_budget: agents.guard_agent
-guard.check_quota: agents.guard_agent
+actions:
+  cloudmonitoring.create_dashboard:
+    agent: agents.worker_hub_agent
+    params:
+      required: [dashboard_display_name, service_name]
+      optional:
+        region: us-central1
 
+  cloudmonitoring.create_alert:
+    agent: agents.worker_hub_agent
+    params:
+      required: [alert_display_name, metric_type, threshold_value]
+      optional:
+        comparison: COMPARISON_GT
+        duration_sec: 300
 # New to add a line for new tool we write
