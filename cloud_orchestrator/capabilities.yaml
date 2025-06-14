@@ -1,16 +1,51 @@
 actions:
-  cloudmonitoring.create_dashboard:
-    agent: agents.worker_hub_agent
-    params:
-      required: [dashboard_display_name, service_name]
-      optional:
-        region: us-central1
+cloudmonitoring.create_dashboard:
+agent: agents.worker_hub_agent
+params:
+required: [dashboard_display_name, service_name]
+optional:
+region: us-central1
 
-  cloudmonitoring.create_alert:
-    agent: agents.worker_hub_agent
-    params:
-      required: [alert_display_name, metric_type, threshold_value]
-      optional:
-        comparison: COMPARISON_GT
-        duration_sec: 300
-# New to add a line for new tool we write
+cloudmonitoring.create_alert:
+agent: agents.worker_hub_agent
+params:
+required: [alert_display_name, metric_type, threshold_value]
+optional:
+comparison: COMPARISON_GT
+duration_sec: 300
+
+secretmanager.create_secret:
+agent: agents.worker_hub_agent
+params:
+required: [secret_id, data]
+optional:
+replication_policy: automatic
+
+secretmanager.add_version:
+agent: agents.worker_hub_agent
+params:
+required: [secret_id, data]
+
+gke.create_cluster:
+agent: agents.gke_worker_agent
+params:
+required: [cluster_name]
+optional:
+region: us-central1
+release_channel: REGULAR
+
+gke.helm_install:
+agent: agents.gke_worker_agent
+params:
+required: [cluster_name, chart_name, namespace]
+optional:
+values_file: ""
+region: us-central1
+
+gke.scale_deployment:
+agent: agents.gke_worker_agent
+params:
+required: [cluster_name, deployment_name, replicas]
+optional:
+namespace: default
+region: us-central1
