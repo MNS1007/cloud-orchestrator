@@ -13,6 +13,7 @@ from __future__ import annotations
 import subprocess, tempfile, os
 from typing import Dict, List
 from google.adk.tools import FunctionTool
+from time import time
 
 
 def _sh(cmd: List[str]) -> str:
@@ -112,7 +113,35 @@ def scale_deployment(
     except RuntimeError as e:
         return {"status": "error", "error_message": str(e)}
 
+@FunctionTool
+def delete_cluster(
+    project_id: str,
+    cluster_name: str,
+    region: str = "us-central1",
+    wait_seconds: int = 600,
+) -> Dict[str, str]:
+    """Delete an Autopilot cluster and wait for completion."""
+    try:
+        _sh([
+            "gcloud", "container", "clusters", "delete", cluster_name,
+            f"--region={region}", f"--project={project_id}", "--quiet"
+        ])
+    
+        deadline = time.time() + wait_seconds
+        while time.time() < deadline:
+            try:
+                _sh([
+                    "gcloud", "container", "clusters", "describe", cluster_name,
+                    f"--region={region}", f"--project={project_id}", "--format=value(name)"
+                ])
+                time.sleep(10)
+            except RuntimeError:
+                return {"status": "success", "message": "cluster deleted"}
+        return {"status": "error", "error_message": "timeout waiting for delete"}
+    except RuntimeError as e:
+        return {"status": "error", "error_message": str(e)}
+
 
 def get_tools():
-    """Expose tools list for Agent.too⁠ls kwarg."""
+    
     return [create_cluster, helm_install, scale_deployment]

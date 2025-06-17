@@ -1,0 +1,6 @@
+## prereq for GKEAutopilot
+
+gcloud components install kubetcl helm
+gcloud components update
+gcloud auth login
+gcloud config set project $PROJECT
