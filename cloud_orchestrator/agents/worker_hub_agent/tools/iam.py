@@ -77,3 +77,36 @@ def grant_role(project_id: str, member: str, role: str) -> dict:
         return {
             "error": f"❌ Failed to grant role. Details:\n{e}"
         }
+
+@FunctionTool
+def delete_sa(project_id: str, sa_name: str = "pubsub-sa-SWAPNITA011") -> dict:
+    """
+    Deletes a service account from the specified GCP project.
+
+    Parameters:
+    - project_id: GCP project ID
+    - sa_name: Name of the service account (default is "pubsub-sa-SWAPNITA011")
+    """
+    try:
+        sa_email = f"{sa_name}@{project_id}.iam.gserviceaccount.com"
+
+        # Step 0: Ensure IAM API is enabled
+        subprocess.run([
+            "gcloud", "services", "enable", "iam.googleapis.com", "--project", project_id
+        ], check=True)
+
+        # Step 1: Delete the service account
+        subprocess.run([
+            "gcloud", "iam", "service-accounts", "delete", sa_email,
+            "--quiet",
+            "--project", project_id
+        ], check=True)
+
+        return {
+            "message": f"🗑️ Service account '{sa_email}' deleted successfully."
+        }
+
+    except subprocess.CalledProcessError as e:
+        return {
+            "error": f"❌ Failed to delete service account. Details:\n{e}"
+        }

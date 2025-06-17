@@ -87,3 +87,36 @@ def insert_json(project_id: str, dataset_id: str, table_id: str, rows: list) -> 
         return {
             "error": f"❌ Failed to insert rows. Details:\n{e}"
         }
+
+@FunctionTool
+def export_table_gcs(project_id: str, dataset_id: str, table_id: str, gcs_uri: str, export_format: str = "CSV") -> dict:
+    """
+    Exports a BigQuery table to Google Cloud Storage in the specified format.
+    
+    Parameters:
+    - project_id: GCP project ID
+    - dataset_id: BigQuery dataset ID
+    - table_id: BigQuery table ID
+    - gcs_uri: Destination GCS URI (e.g., gs://my-bucket/exports/myfile.csv)
+    - export_format: One of 'CSV', 'JSON', or 'AVRO'
+    """
+    try:
+        subprocess.run([
+            "gcloud", "services", "enable", "bigquery.googleapis.com", "--project", project_id
+        ], check=True)
+
+        subprocess.run([
+            "bq", "--project_id", project_id, "extract",
+            f"--destination_format={export_format.upper()}",
+            f"{dataset_id}.{table_id}",
+            gcs_uri
+        ], check=True)
+
+        return {
+            "message": f"📤 Table '{dataset_id}.{table_id}' exported to '{gcs_uri}' in {export_format.upper()} format."
+        }
+
+    except subprocess.CalledProcessError as e:
+        return {
+            "error": f"❌ Failed to export table. Details:\n{e}"
+        }
