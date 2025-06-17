@@ -47,3 +47,49 @@ def monitor_job(project_id: str, region: str, job_id: str) -> dict:
         return {
             "error": f"❌ Failed to monitor Dataflow job. Details:\n{e}"
         }
+
+@FunctionTool
+def cancel_job(project_id: str, region: str, job_id: str) -> dict:
+    """Cancel a running Dataflow job."""
+    try:
+        result = subprocess.run([
+            "gcloud", "dataflow", "jobs", "cancel", job_id,
+            f"--project={project_id}",
+            f"--region={region}"
+        ], check=True, capture_output=True, text=True)
+
+        return {
+            "message": f"🛑 Job {job_id} cancelled successfully.",
+            "output": result.stdout.strip()
+        }
+
+    except subprocess.CalledProcessError as e:
+        return {
+            "error": f"❌ Failed to cancel job {job_id}. Details:\n{e}"
+        }
+
+@FunctionTool
+def list_jobs(project_id: str, region: str, limit: int = 5) -> dict:
+    """List recent Dataflow jobs in a region."""
+    try:
+        result = subprocess.run([
+            "gcloud", "dataflow", "jobs", "list",
+            f"--project={project_id}",
+            f"--region={region}",
+            f"--limit={limit}",
+            "--format=value(id,name,currentState,creationTime)"
+        ], check=True, capture_output=True, text=True)
+
+        jobs = [
+            dict(zip(["job_id", "name", "status", "created"], line.split('\t')))
+            for line in result.stdout.strip().splitlines()
+        ]
+
+        return {
+            "jobs": jobs
+        }
+
+    except subprocess.CalledProcessError as e:
+        return {
+            "error": f"❌ Failed to list jobs. Details:\n{e}"
+        }

@@ -8,7 +8,7 @@ from .tools.iam import create_sa, grant_role, delete_sa
 from .tools.bigquery import create_dataset, create_table, insert_json, export_table_gcs
 from .tools.pubsub import create_topic, create_subscription, publish, pull
 from .tools.computeengine import create_vm, delete_vm, get_external_ip, snapshot_disk
-from .tools.dataflow import launch_flex_template, monitor_job
+from .tools.dataflow import launch_flex_template, monitor_job, cancel_job, list_jobs
 
 worker_hub = Agent(
     name="worker_hub_v1",
@@ -34,6 +34,8 @@ worker_hub = Agent(
         "- Use 'snapshot_disk' to create a snapshot of a Compute Engine persistent disk.\n\n"
         "- Use 'launch_flex_template' to run a Dataflow job from a Flex Template.\n"
         "- Use 'monitor_job' to check the current status of a Dataflow job.\n\n"
+        "- Use 'cancel_job' to cancel a running Dataflow job.\n"
+        "- Use 'list_jobs' to list recent Dataflow jobs in a given region.\n\n"
         "Always infer intent from natural language and call the right tool. If a tool fails, clearly explain what went wrong and suggest how to fix it if possible."
     ),
     tools=[
@@ -54,6 +56,8 @@ worker_hub = Agent(
         snapshot_disk,
         launch_flex_template,
         monitor_job,
+        cancel_job,
+        list_jobs,
     ],
 )
 
