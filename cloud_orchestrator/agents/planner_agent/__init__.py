@@ -1,3 +1,3 @@
-from .planner import PlannerAgent
+from .planner import planner_agent
 
-root_agent = PlannerAgent(name="Planner")
+root_agent = planner_agent

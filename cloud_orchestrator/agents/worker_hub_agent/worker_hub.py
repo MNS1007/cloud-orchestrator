@@ -2,6 +2,7 @@
 # export PATH="$PATH:/opt/homebrew/bin"
 # python3 -m pip install google-adk
 # export PATH="$HOME/Library/Python/3.9/bin:$PATH"
+# python3 -m pip install google-generativeai
 
 from google.adk.agents import Agent
 from .tools.iam import create_sa, grant_role, delete_sa

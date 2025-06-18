@@ -1,0 +1,63 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>GCP DAG Visualization</title>
+        <script src="https://unpkg.com/cytoscape@3.20.0/dist/cytoscape.min.js"></script>
+        <style>
+            #cy {
+                width: 100%;
+                height: 600px;
+                display: block;
+                border: 1px solid #ccc;
+            }
+        </style>
+    </head>
+    <body>
+        <h2 style="text-align:center;">GCP Service DAG</h2>
+        <div id="cy"></div>
+        <script>
+            const elements = JSON.parse(`[{"data": {"id": "Pub/Sub"}}, {"data": {"id": "Dataflow"}}, {"data": {"source": "Pub/Sub", "target": "Dataflow"}}, {"data": {"id": "Cloud Storage"}}, {"data": {"source": "Dataflow", "target": "Cloud Storage"}}, {"data": {"id": "Cloud Monitoring"}}, {"data": {"source": "Dataflow", "target": "Cloud Monitoring"}}]`);
+            console.log("DEBUG ELEMENTS:", elements);
+            var cy = cytoscape({
+                container: document.getElementById('cy'),
+                elements: elements,
+                layout: {
+                    name: 'breadthfirst',
+                    directed: true,
+                    padding: 10
+                },
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'content': 'data(id)',
+                            'text-valign': 'center',
+                            'color': '#000',
+                            'background-color': '#a3d5ff',
+                            'shape': 'roundrectangle',
+                            'text-wrap': 'wrap',
+                            'text-max-width': 200,
+                            'font-size': 16,
+                            'padding': '20px',
+                            'width': 'label',          // allows dynamic sizing
+                            'height': 'label'
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 2,
+                            'line-color': '#999',
+                            'target-arrow-color': '#999',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier'
+                        }
+                    }
+                ]
+            });
+        </script>
+    </body>
+    </html>
+    
