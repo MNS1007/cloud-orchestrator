@@ -17,3 +17,11 @@ WORKER_SA="worker-sa@$PROJECT.iam.gserviceaccount.com"
 gcloud projects add-iam-policy-binding $PROJECT \
   --member="serviceAccount:${WORKER_SA}" \
   --role=roles/aiplatform.user
+
+pip install --upgrade google-cloud-aiplatform
+
+TO see if any models exists
+gcloud ai models list \
+  --project=cloud4bp \
+  --region=us-central1 \
+  --format="table(name,displayName)"

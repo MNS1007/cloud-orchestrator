@@ -8,7 +8,7 @@ region: us-central1
 
 cloudmonitoring.create_alert:
 agent: agents.worker_hub_agent
-params:
+params: 
 required: [alert_display_name, metric_type, threshold_value]
 optional:
 comparison: COMPARISON_GT
@@ -31,7 +31,7 @@ agent: agents.gke_worker_agent
 params:
 required: [cluster_name]
 optional:
-region: us-central1
+region: us-central1 
 release_channel: REGULAR
 
 gke.helm_install:
