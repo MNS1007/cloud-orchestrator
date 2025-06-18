@@ -18,7 +18,7 @@
         <h2 style="text-align:center;">GCP Service DAG</h2>
         <div id="cy"></div>
         <script>
-            const elements = JSON.parse(`[{"data": {"id": "Pub/Sub"}}, {"data": {"id": "Dataflow"}}, {"data": {"source": "Pub/Sub", "target": "Dataflow"}}, {"data": {"id": "Cloud Storage"}}, {"data": {"source": "Dataflow", "target": "Cloud Storage"}}, {"data": {"id": "Cloud Monitoring"}}, {"data": {"source": "Dataflow", "target": "Cloud Monitoring"}}]`);
+            const elements = JSON.parse(`[{"data": {"id": "Pub/Sub"}}, {"data": {"id": "Dataflow"}}, {"data": {"source": "Pub/Sub", "target": "Dataflow"}}, {"data": {"id": "Cloud Storage"}}, {"data": {"source": "Dataflow", "target": "Cloud Storage"}}, {"data": {"id": "BigQuery"}}, {"data": {"source": "Dataflow", "target": "BigQuery"}}, {"data": {"id": "Cloud Monitoring"}}, {"data": {"source": "Dataflow", "target": "Cloud Monitoring"}}]`);
             console.log("DEBUG ELEMENTS:", elements);
             var cy = cytoscape({
                 container: document.getElementById('cy'),
