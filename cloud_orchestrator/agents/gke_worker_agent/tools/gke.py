@@ -65,7 +65,7 @@ def helm_install(
     cluster_name: str,
     chart_name: str,
     namespace: str,
-    values_yaml: str | None = None,   
+    values_yaml: List[str],   
     region: str = "us-central1",
 ) -> Dict[str, str]:
     """Install or upgrade a Helm chart on the specified cluster."""
@@ -144,4 +144,4 @@ def delete_cluster(
 
 def get_tools():
     
-    return [create_cluster, helm_install, scale_deployment]
+    return [create_cluster, helm_install, scale_deployment, delete_cluster]

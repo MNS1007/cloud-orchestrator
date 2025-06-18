@@ -1,6 +1,19 @@
 ## prereq for GKEAutopilot
 
-gcloud components install kubetcl helm
+gcloud components install kubectl 
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | Mac
 gcloud components update
 gcloud auth login
 gcloud config set project $PROJECT
+
+---> VertexAIAgent
+
+gcloud components update
+gcloud services enable aiplatform.googleapis.com  -> enable AI platform
+gcloud auth login -> login
+gcloud config set project $PROJECT -> set project
+
+WORKER_SA="worker-sa@$PROJECT.iam.gserviceaccount.com"
+gcloud projects add-iam-policy-binding $PROJECT \
+  --member="serviceAccount:${WORKER_SA}" \
+  --role=roles/aiplatform.user
