@@ -2,7 +2,7 @@ import subprocess
 import json
 from typing import Dict, Tuple
 from google.adk.tools.function_tool import FunctionTool
-
+import urllib.parse
 
 @FunctionTool
 def check_budget(project_id: str, billing_account_id: str) -> dict:
@@ -196,6 +196,44 @@ def suggest_quota_increase(project_id: str, service: str, metric: str, region: s
         f"{full_url}"
     )
 
+def request_quota_increase(project_id: str, service: str, metric: str, region: str = None, planned: float = None) -> str:
+    """
+    Builds a Gmail-ready mailto link for requesting a quota increase.
+
+    Args:
+        project_id: The GCP project ID.
+        service: GCP service (e.g., compute.googleapis.com).
+        metric: Quota metric (e.g., CPUS).
+        region: Region name (e.g., us-central1) or None for global.
+        planned: Planned usage that caused the BLOCK, for context.
+
+    Returns:
+        A mailto link the user can click to open a pre-filled Gmail draft.
+    """
+    recipient = "cloud-quota@google.com"
+    subject = f"Quota Increase Request for {metric} in {region or 'global'} ({project_id})"
+
+    body = (
+        f"Hello Google Cloud Support,\n\n"
+        f"I would like to request a quota increase for the following resource:\n\n"
+        f"• Project ID: {project_id}\n"
+        f"• Service: {service}\n"
+        f"• Metric: {metric}\n"
+        f"• Region: {region or 'Global'}\n"
+        f"• Planned usage: {planned or '[please specify]'}\n\n"
+        f"Please let me know if you need any additional information.\n\n"
+        f"Best regards,\n"
+        f"[Your Name]"
+    )
+
+    mailto_link = (
+        f"mailto:{recipient}"
+        f"?subject={urllib.parse.quote(subject)}"
+        f"&body={urllib.parse.quote(body)}"
+    )
+
+    return f"📧 Option 2: To manually request a quota increase via email, [click here]({mailto_link}) or copy the link below:\n{mailto_link}"
+
 @FunctionTool
 def check_quota(project_id: str, planned_usage: Dict[str, Dict[str, Dict[str, float]]]) -> dict:
     """
@@ -258,7 +296,6 @@ def check_quota(project_id: str, planned_usage: Dict[str, Dict[str, Dict[str, fl
                 for q in quota_data:
                     normalized_qmetric = q.get("metric", "").split("/")[-1].lower()
                     if metric.lower() == normalized_qmetric:
-                        details.append("📊 MATCHED")
                         for limit in q.get("consumerQuotaLimits", []):
                             for bucket in limit.get("quotaBuckets", []):
                                 is_global_quota = not bucket.get("dimensions") or "region" not in bucket["dimensions"]
@@ -273,7 +310,8 @@ def check_quota(project_id: str, planned_usage: Dict[str, Dict[str, Dict[str, fl
                                     elif planned > limit_val:
                                         details.append(f"❌ BLOCK: {planned} > limit {limit_val} for {metric} in {region}")
                                         status_list.append("BLOCK")
-                                        details.append(suggest_quota_increase(project_id, service, metric, region))
+                                        details.append(f"🔗 Option 1: {suggest_quota_increase(project_id, service, metric, region)}")
+                                        details.append(request_quota_increase(project_id, service, metric, region, planned))
                                     elif planned > remaining:
                                         details.append(f"⚠️ WARN: {planned} > available {remaining} for {metric} in {region}")
                                         status_list.append("WARN")
@@ -294,5 +332,5 @@ def check_quota(project_id: str, planned_usage: Dict[str, Dict[str, Dict[str, fl
     overall = "BLOCK" if "BLOCK" in status_list else "WARN" if "WARN" in status_list else "OK"
     return {
         "status": overall,
-        "message": "\n".join(details)
+        "message": "```\n" + "\n".join(details) + "\n```"
     }
