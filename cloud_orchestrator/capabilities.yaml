@@ -4,3 +4,23 @@ guard.check_budget: agents.guard_agent
 guard.check_quota: agents.guard_agent
 
 # New to add a line for new tool we write
+
+
+actions:
+  vpc.manage_vpc_network:
+    agent: agents.worker_hub_agent
+    params:
+      required: [vpc_name, project_id]
+      optional: [subnets, create_subnets]
+
+  vpc.check_network_subnets:
+    agent: agents.worker_hub_agent
+    params:
+      required: [subnets, project_id]
+
+# Optional structure for defining subnets if needed:
+# subnets:
+#   params:
+#     required: [subnet_name, subnet_range, subnet_region]
+
+
