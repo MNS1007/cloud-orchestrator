@@ -1,6 +1,64 @@
 iam.create_sa: agents.worker_hub_agent
-cloudrun.deploy_service: agents.worker_hub_agent
 guard.check_budget: agents.guard_agent
 guard.check_quota: agents.guard_agent
 
 # New to add a line for new tool we write
+
+# Cloud Storage
+cloud_storage.create_bucket: agents.worker_hub_agent
+cloud_storage.enable_versioning: agents.worker_hub_agent
+cloud_storage.upload_to_bucket: agents.worker_hub_agent
+cloud_storage.set_default_storage_class: agents.worker_hub_agent
+cloud_storage.enable_soft_delete: agents.worker_hub_agent
+cloud_storage.enable_autoclass: agents.worker_hub_agent
+cloud_storage.set_uniform_access: agents.worker_hub_agent
+cloud_storage.set_public_access_prevention: agents.worker_hub_agent
+cloud_storage.set_default_encryption: agents.worker_hub_agent
+cloud_storage.set_lifecycle_rule: agents.worker_hub_agent
+
+# Cloud SQL
+cloud_sql.create_sql_instance: agents.worker_hub_agent
+cloud_sql.describe_sql_instance: agents.worker_hub_agent
+cloud_sql.list_sql_instances: agents.worker_hub_agent
+cloud_sql.delete_sql_instance: agents.worker_hub_agent
+cloud_sql.update_sql_instance: agents.worker_hub_agent
+cloud_sql.restart_sql_instance: agents.worker_hub_agent
+cloud_sql.connect_to_sql_instance: agents.worker_hub_agent
+cloud_sql.reschedule_sql_maintenance: agents.worker_hub_agent
+cloud_sql.create_sql_database: agents.worker_hub_agent
+cloud_sql.describe_sql_database: agents.worker_hub_agent
+cloud_sql.list_sql_databases: agents.worker_hub_agent
+cloud_sql.delete_sql_database: agents.worker_hub_agent
+cloud_sql.patch_sql_database: agents.worker_hub_agent
+cloud_sql.create_sql_user: agents.worker_hub_agent
+cloud_sql.delete_sql_user: agents.worker_hub_agent
+cloud_sql.list_sql_users: agents.worker_hub_agent
+cloud_sql.set_sql_password: agents.worker_hub_agent
+cloud_sql.create_sql_backup: agents.worker_hub_agent
+cloud_sql.delete_sql_backup: agents.worker_hub_agent
+cloud_sql.describe_sql_backup: agents.worker_hub_agent
+cloud_sql.list_sql_backups: agents.worker_hub_agent
+cloud_sql.restore_sql_instance: agents.worker_hub_agent
+cloud_sql.export_sql_data: agents.worker_hub_agent
+cloud_sql.import_sql_data: agents.worker_hub_agent
+cloud_sql.create_sql_ssl_cert: agents.worker_hub_agent
+cloud_sql.delete_sql_ssl_cert: agents.worker_hub_agent
+cloud_sql.describe_sql_ssl_cert: agents.worker_hub_agent
+cloud_sql.list_sql_ssl_certs: agents.worker_hub_agent
+cloud_sql.list_sql_operations: agents.worker_hub_agent
+cloud_sql.list_sql_tiers: agents.worker_hub_agent
+cloud_sql.list_sql_flags: agents.worker_hub_agent
+cloud_sql.generate_sql_login_token: agents.worker_hub_agent
+cloud_sql.run_psql_query: agents.worker_hub_agent
+
+# Cloud Logging
+cloud_logging.read_log_entries: agents.worker_hub_agent
+cloud_logging.write_custom_log_entry: agents.worker_hub_agent
+cloud_logging.copy_log_entries: agents.worker_hub_agent
+cloud_logging.list_logs: agents.worker_hub_agent
+cloud_logging.delete_log: agents.worker_hub_agent
+cloud_logging.create_log_based_metric: agents.worker_hub_agent
+cloud_logging.describe_log_metric: agents.worker_hub_agent
+cloud_logging.list_log_metrics: agents.worker_hub_agent
+cloud_logging.update_log_metric: agents.worker_hub_agent
+cloud_logging.delete_log_metric: agents.worker_hub_agent

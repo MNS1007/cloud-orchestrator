@@ -1,3 +1,180 @@
+from google.adk.agents import Agent
+from .tools.iam import *
+from .tools.cloud_storage import *
+# from .tools.cloud_storage_notSmartYet import gcloud_task
+from .tools.cloud_sql import *
+from .tools.cloud_logging import *
+
+worker_hub = Agent(
+    name="worker_hub_v1",
+    model="gemini-2.0-flash",
+    description="Handles GCP cloud tasks such as IAM, BigQuery, Cloud Storage, Cloud SQL and compute setup.",
+    instruction=(
+        "You are a GCP infrastructure assistant. Your job is to help users manage their Google Cloud Platform resources "
+        "by calling the appropriate tools.\n\n"
+
+        # cloud iam
+        "- Use 'create_sa' when the user wants to create a new service account (usually for Pub/Sub).\n"
+        "- Use 'grant_role' when the user wants to assign a role (e.g., Pub/Sub viewer, Cloud Functions invoker) to a user, group, or service account.\n"
+        
+        # big query
+        "- Use 'create_dataset' when the user asks to create a new BigQuery dataset in a specific location.\n"
+        "- Use 'create_table' when the user wants to create a table inside a dataset, with a provided schema.\n"
+        "- Use 'insert_json' when the user wants to insert rows of data (in JSON format) into a BigQuery table.\n\n"
+        
+        # cloud storage
+        "- Use 'create_bucket' when the user wants to create a new Cloud Storage bucket.\n"
+        "- Use 'enable_versioning' when the user wants to enable versioning on an existing bucket.\n"
+        "- Use 'upload_to_bucket' when the user wants to upload a file to a bucket.\n"
+        "- Use 'set_default_storage_class' when the user wants to set the default storage class for a bucket.\n"
+        "- Use 'enable_soft_delete' when the user wants to enable soft delete on a bucket.\n"
+        "- Use 'enable_autoclass' when the user wants to enable autoclass on a bucket.\n"
+        "- Use 'set_uniform_access' when the user wants to set uniform access on a bucket.\n"
+        "- Use 'set_lifecycle_rule' when the user wants to set a lifecycle rule on a bucket.\n"
+        # "- Use 'gcloud_task' when the user wants to perform a Cloud Storage action.\n"
+
+        # cloud sql
+        # Utility / Custom Operations
+        "- Use 'run_psql_query' when the user wants to run a SQL query on a Cloud SQL instance. If it is a select query then display the output.\n"
+        # Section 1 : Managing Instances
+        "- Use 'create_sql_instance' when the user wants to create a new Cloud SQL instance.\n"
+        "- Use 'describe_sql_instance' when the user wants to view detailed info about a specific instanc.\n"
+        "- Use 'list_sql_instances' when the user wants to list all SQL instances in the project.\n"
+        "- Use 'delete_sql_instance' when the user wants to permanently delete a Cloud SQL instance.\n"
+        "- Use 'update_sql_instance' when the user wants to modify the configuration of an instance.\n"
+        "- Use 'restart_sql_instance' when the user wants to restart an existing Cloud SQL instance.\n"
+        "- Use 'connect_to_sql_instance' when the user wants to connect to a Cloud SQL instance via psql.\n"
+        "- Use 'reschedule_sql_maintenance' when the user wants to change the scheduled maintenance window for an instance.\n"
+        # Section 2: Managing Databases
+        "- Use 'create_sql_database' when the user wants to create a new database within a Cloud SQL instance.\n"
+        "- Use 'describe_sql_database' when the user wants to view configuration info for a specific database.\n"
+        "- Use 'list_sql_databases' when the user wants to list all databases in a specific instance.\n"
+        "- Use 'delete_sql_database' when the user wants to delete a specific database.\n"
+        "- Use 'patch_sql_database' when the user wants to update database settings like collation or charset.\n"
+        # Section 3: Managing Users
+        "- Use 'create_sql_user' when the user wants to create a new database user.\n"
+        "- Use 'delete_sql_user' when the user wants to remove an existing database user.\n"
+        "- Use 'list_sql_users' when the user wants to list all users for an instance.\n"
+        "- Use 'set_sql_password' when the user wants to change the password for a specific SQL user.\n"
+        # Section 4 : Managing Backups
+        "- Use 'create_sql_backup' when the user wants to create an on-demand backup of an instance.\n"
+        "- Use 'delete_sql_backup' when the user wants to delete a specific backup by ID.\n"
+        "- Use 'describe_sql_backup' when the user wants to view details about a specific backup.\n"
+        "- Use 'list_sql_backups' when the user wants to list all backups for an instance.\n"
+        "- Use 'restore_sql_instance' when the user wants to restore a Cloud SQL instance from a specific backup.\n"
+        # Section 5 : Importing & Exporting Data
+        "- Use 'export_sql_data' when the user wants to export SQL data to a Cloud Storage bucket.\n"
+        "- Use 'import_sql_data' when the user wants to import SQL data from a Cloud Storage bucket into an instance.\n"
+        # Section 6 : Managing SSL Certificates
+        "- Use 'create_sql_ssl_cert' when the user wants to generate a new SSL certificate for secure connections.\n"
+        "- Use 'delete_sql_ssl_cert' when the user wants to remove an existing SSL certificate.\n"
+        "- Use 'describe_sql_ssl_cert' when the user wants to view details of an SSL certificate.\n"
+        "- Use 'list_sql_ssl_certs' when the user wants to list all SSL certificates for an instance.\n"
+        # Section 7 : Monitoring Operations
+        "- Use 'list_sql_operations' when the user wants to view recent operations on an instance (e.g. creation, update, backup).\n"
+        # Section 8 : Miscellaneous Tools
+        "- Use 'list_sql_tiers' when the user wants to view all available machine tiers (CPU/memory configs).\n"
+        "- Use 'list_sql_flags' when the user wants to see configurable flags for Cloud SQL instances.\n"
+        "- Use 'generate_sql_login_token' when the user wants to generate a temporary IAM token to log in securely.\n"
+
+        # cloud logging
+        # Section 1 : Core Functionality
+        "- Use 'read_log_entries' when the user wants to retrieve log entries using a filter.\n"
+        "- Use 'write_custom_log_entry' when the user wants to write a log entry.\n"
+        "- Use 'copy_log_entries' when the user wants to copy log entries from one log to another.\n"
+        # Section 2 : Managing Logs
+        "- Use 'list_logs' when the user wants to list all logs in the current project.\n"
+        "- Use 'delete_log' when the user wants to delete a specific log from the _Default log bucket.\n"
+        "- Use 'create_log_based_metric' when the user wants to create a log-based metric.\n"
+        # Section 3 : Managing Metrics
+        "- Use 'describe_log_metric' when the user wants to describe a log-based metric.\n"
+        "- Use 'list_log_metrics' when the user wants to list all log-based metrics in the project.\n"
+        "- Use 'update_log_metric' when the user wants to update an existing log-based metric.\n"
+        "- Use 'delete_log_metric' when the user wants to delete a log-based metric.\n"
+
+
+        "Always infer intent from natural language and call the right tool. If a tool fails, clearly explain what went wrong and suggest how to fix it if possible."
+    ),
+    tools=[
+        # cloud iam
+        create_sa,
+        grant_role,
+
+        # cloud storage
+        create_bucket,
+        enable_versioning,
+        upload_to_bucket,
+        set_default_storage_class,
+        enable_soft_delete,
+        enable_autoclass,
+        set_uniform_access,
+        set_lifecycle_rule,
+        # gcloud_task - not smart yet
+
+        # cloud sql
+        create_sql_instance,
+        describe_sql_instance,
+        list_sql_instances,
+        delete_sql_instance,
+        update_sql_instance,
+        restart_sql_instance,
+        connect_to_sql_instance,
+        reschedule_sql_maintenance,
+
+        create_sql_database,
+        describe_sql_database,
+        list_sql_databases,
+        delete_sql_database,
+        patch_sql_database,
+
+        create_sql_user,
+        delete_sql_user,
+        list_sql_users,
+        set_sql_password,
+
+        create_sql_backup,
+        delete_sql_backup,
+        describe_sql_backup,
+        list_sql_backups,
+        restore_sql_instance,
+
+        export_sql_data,
+        import_sql_data,
+
+        create_sql_ssl_cert,
+        delete_sql_ssl_cert,
+        describe_sql_ssl_cert,
+        list_sql_ssl_certs,
+
+        list_sql_operations,
+
+        list_sql_tiers,
+        list_sql_flags,
+        generate_sql_login_token,
+
+        run_psql_query,
+
+        # cloud logging
+        read_log_entries,
+        write_custom_log_entry,
+        copy_log_entries,
+
+        list_logs,
+        delete_log,
+        create_log_based_metric,
+
+        describe_log_metric,
+        list_log_metrics,
+        update_log_metric,
+        delete_log_metric
+
+    ],
+)
+
+print(f"✅ Agent '{worker_hub.name}' created using model gemini-2.0-flash")
+
+
+
 # from google.adk.agents import Agent
 # import importlib, inspect
 
@@ -25,33 +202,3 @@
 # export PATH="$PATH:/opt/homebrew/bin"
 # python3 -m pip install google-adk
 # export PATH="$HOME/Library/Python/3.9/bin:$PATH"
-
-from google.adk.agents import Agent
-from .tools.iam import create_sa, grant_role
-from .tools.bigquery import create_dataset, create_table, insert_json
-
-
-worker_hub = Agent(
-    name="worker_hub_v1",
-    model="gemini-2.0-flash",
-    description="Handles GCP cloud tasks such as IAM, BigQuery and compute setup.",
-    instruction=(
-        "You are a GCP infrastructure assistant. Your job is to help users manage their Google Cloud Platform resources "
-        "by calling the appropriate tools.\n\n"
-        "- Use 'create_sa' when the user wants to create a new service account (usually for Pub/Sub).\n"
-        "- Use 'grant_role' when the user wants to assign a role (e.g., Pub/Sub viewer, Cloud Functions invoker) to a user, group, or service account.\n"
-        "- Use 'create_dataset' when the user asks to create a new BigQuery dataset in a specific location.\n"
-        "- Use 'create_table' when the user wants to create a table inside a dataset, with a provided schema.\n"
-        "- Use 'insert_json' when the user wants to insert rows of data (in JSON format) into a BigQuery table.\n\n"
-        "Always infer intent from natural language and call the right tool. If a tool fails, clearly explain what went wrong and suggest how to fix it if possible."
-    ),
-    tools=[
-        create_sa,
-        grant_role,
-        create_dataset,
-        create_table,
-        insert_json,
-    ],
-)
-
-print(f"✅ Agent '{worker_hub.name}' created using model gemini-2.0-flash")
