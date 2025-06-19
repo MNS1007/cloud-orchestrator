@@ -2,6 +2,22 @@ import os
 import subprocess
 from google.adk.tools.function_tool import FunctionTool
 
+# cloud build api is required, here there is a tool that does that
+# the docker file should exist on the local system and local path should be given
+# and docker should be running
+
+# Global variable to store the working directory
+WORKING_DIRECTORY = None
+
+@FunctionTool
+def set_working_directory(path: str) -> dict:
+    global WORKING_DIRECTORY
+    abs_path = os.path.abspath(path)
+    if not os.path.isdir(abs_path):
+        return {"error": f"❌ Directory does not exist: {abs_path}"}
+    WORKING_DIRECTORY = abs_path
+    return {"message": f"✅ Working directory set to: {abs_path}"}
+
 @FunctionTool
 def enable_cloud_build_api(project_id: str) -> dict:
     try:
@@ -32,11 +48,16 @@ def build_and_push_docker_image(
     location: str,
     repository_name: str,
     image_name: str,
-    local_dir_path: str = "./my-docker-app"
+    local_dir_path: str , 
 ) -> dict:
+    global WORKING_DIRECTORY
     image_uri = f"{location}-docker.pkg.dev/{project_id}/{repository_name}/{image_name}:latest"
     try:
-        os.chdir(local_dir_path)
+        # Use the set working directory if available
+        target_dir = WORKING_DIRECTORY if WORKING_DIRECTORY else os.path.abspath(local_dir_path)
+        print("Current working directory before chdir:", os.getcwd())
+        print("Attempting to change directory to:", target_dir)
+        os.chdir(target_dir)
         subprocess.run(
             f"docker build -t {image_uri} .",
             shell=True, check=True
@@ -48,3 +69,5 @@ def build_and_push_docker_image(
         return {"message": f"✅ Docker image pushed: {image_uri}"}
     except subprocess.CalledProcessError as e:
         return {"error": f"❌ Failed to build or push image: {e}"}
+    except FileNotFoundError as fnf:
+        return {"error": f"❌ Directory not found: {fnf}", "current_working_directory": os.getcwd()}
