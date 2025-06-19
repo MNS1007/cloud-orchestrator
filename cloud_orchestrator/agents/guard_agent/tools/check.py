@@ -172,63 +172,127 @@ def enable_service_api(project_id: str, service_name: str) -> dict:
             "message": f"❌ Failed to enable API '{service_name}' for project '{project_id}'. Details: {e}"
         }
 
-@FunctionTool
-def check_quota(project_id: str, planned_usage: Dict[str, Dict[str, float]]) -> dict:
+def suggest_quota_increase(project_id: str, service: str, metric: str, region: str = None) -> str:
     """
-    For Compute Engine, checks if planned usage (e.g., CPUs, INSTANCES) fits within quota
-    for each specified region. Only supports compute.googleapis.com.
-    Automatically enables the API if not already enabled.
+    Builds a URL to request a quota increase in the GCP Console and returns a helpful message.
+    
+    Args:
+        project_id: The GCP project ID.
+        service: The full service name (e.g., compute.googleapis.com).
+        metric: The quota metric name (e.g., CPUS).
+        region: The region where quota is exceeded (optional).
+    
+    Returns:
+        A user-friendly message with a console link.
     """
-    import subprocess, json
+    base_url = "https://console.cloud.google.com/iam-admin/quotas"
+    query_params = f"?project={project_id}&service={service}&metric={metric}"
+    if region:
+        query_params += f"&location={region}"
 
+    full_url = f"{base_url}{query_params}"
+    return (
+        f"📌 To request a quota increase for `{metric}` in `{region or 'global'}`, visit:\n"
+        f"{full_url}"
+    )
+
+@FunctionTool
+def check_quota(project_id: str, planned_usage: Dict[str, Dict[str, Dict[str, float]]]) -> dict:
+    """
+    Checks if planned usage fits within quota for any GCP service using the Service Usage API.
+
+    Requires: gcloud auth application-default login
+
+    Args:
+        project_id: GCP project ID
+        planned_usage: Dict of service -> region -> metric -> planned value
+
+    Returns:
+        dict with overall status and quota comparison messages
+    """
+    import requests
+    import subprocess
+    import json
+
+    def get_access_token():
+        result = subprocess.run(
+            ["gcloud", "auth", "application-default", "print-access-token"],
+            capture_output=True, text=True, check=True
+        )
+        return result.stdout.strip()
+
+    token = get_access_token()
+    headers = {"Authorization": f"Bearer {token}"}
     status_list = []
     details = []
 
     for service, region_map in planned_usage.items():
-        if service != "compute.googleapis.com":
-            details.append(f"⚠️ Service '{service}' not supported in this quota checker.")
-            status_list.append("WARN")
+        # Enable API
+        try:
+            subprocess.run(
+                ["gcloud", "services", "enable", service, f"--project={project_id}"],
+                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            )
+            details.append(f"🔧 Enabled API for {service}")
+        except subprocess.CalledProcessError as e:
+            if "already enabled" in e.stderr.lower():
+                details.append(f"ℹ️ API {service} already enabled.")
+            else:
+                details.append(f"❌ BLOCK: Failed to enable API '{service}':\n{e.stderr}")
+                status_list.append("BLOCK")
+                continue
+
+        # Fetch quotas
+        url = f"https://serviceusage.googleapis.com/v1beta1/projects/{project_id}/services/{service}/consumerQuotaMetrics?view=FULL"
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            details.append(f"❌ BLOCK: Failed to fetch quota for {service}: {response.text}")
+            status_list.append("BLOCK")
             continue
+        
+        quota_data = response.json().get("metrics", [])
 
         for region, metrics in region_map.items():
-            try:
-                result = subprocess.run([
-                    "gcloud", "compute", "regions", "describe", region,
-                    f"--project={project_id}",
-                    "--format=json(quotas)"
-                ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            for metric, planned in metrics.items():
+                matched = False
+                for q in quota_data:
+                    normalized_qmetric = q.get("metric", "").split("/")[-1].lower()
+                    if metric.lower() == normalized_qmetric:
+                        details.append("📊 MATCHED")
+                        for limit in q.get("consumerQuotaLimits", []):
+                            for bucket in limit.get("quotaBuckets", []):
+                                is_global_quota = not bucket.get("dimensions") or "region" not in bucket["dimensions"]
+                                bucket_region = bucket.get("dimensions", {}).get("region")
+                                if bucket_region == region or is_global_quota:
+                                    limit_val = float(bucket.get("effectiveLimit", 0))
+                                    usage = float(bucket.get("usage", 0)) if "usage" in bucket else 0.0
+                                    remaining = limit_val - usage
+                                    if limit_val == -1:
+                                        details.append(f"✅ OK: No enforced quota for {metric} in {region} (limit = -1)")
+                                        status_list.append("OK")
+                                    elif planned > limit_val:
+                                        details.append(f"❌ BLOCK: {planned} > limit {limit_val} for {metric} in {region}")
+                                        status_list.append("BLOCK")
+                                        details.append(suggest_quota_increase(project_id, service, metric, region))
+                                    elif planned > remaining:
+                                        details.append(f"⚠️ WARN: {planned} > available {remaining} for {metric} in {region}")
+                                        status_list.append("WARN")
+                                    else:
+                                        details.append(f"✅ OK: {planned} ≤ available {remaining} for {metric} in {region}")
+                                        status_list.append("OK")
 
-                quotas = json.loads(result.stdout).get("quotas", [])
+                                    matched = True
+                                    break  # found region match, stop inner loop
+                            if matched:
+                                break  # matched one bucket, skip to next metric
+                    if matched:
+                        break
+                if not matched:
+                    details.append(f"⚠️ WARN: No match found for {metric} in {region}")
+                    status_list.append("WARN")
 
-                for metric_name, planned in metrics.items():
-                    quota_entry = next((q for q in quotas if q.get("metric") == metric_name), None)
-
-                    if not quota_entry:
-                        details.append(f"⚠️ WARN: No quota entry found for {metric_name} in {region}")
-                        status_list.append("WARN")
-                        continue
-
-                    limit = float(quota_entry.get("limit", 0))
-                    usage = float(quota_entry.get("usage", 0))
-                    remaining = limit - usage
-
-                    if planned > limit:
-                        details.append(f"❌ BLOCK: Planned {planned} exceeds total quota {limit} for {metric_name} in {region}")
-                        status_list.append("BLOCK")
-                    elif planned > remaining:
-                        details.append(f"⚠️ WARN: Planned {planned} exceeds available quota {remaining} for {metric_name} in {region}")
-                        status_list.append("WARN")
-                    else:
-                        details.append(f"✅ OK: Planned {planned} within quota ({usage}/{limit}) for {metric_name} in {region}")
-                        status_list.append("OK")
-
-            except subprocess.CalledProcessError as e:
-                details.append(f"❌ ERROR: Failed to fetch quotas for '{region}' in project '{project_id}'. Stderr:\n{e.stderr}")
-                status_list.append("ERROR")
-
-    overall_status = "BLOCK" if "BLOCK" in status_list else "WARN" if "WARN" in status_list else "OK"
-
+    overall = "BLOCK" if "BLOCK" in status_list else "WARN" if "WARN" in status_list else "OK"
     return {
-        "status": overall_status,
+        "status": overall,
         "message": "\n".join(details)
     }
