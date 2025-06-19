@@ -6,96 +6,61 @@ from google.adk.tools.function_tool import FunctionTool
 # ⚙️ Utility / Custom Operations
 
 @FunctionTool
-# def run_psql_query(
-#     instance_name: str,
-#     db_name: str,
-#     password: str
-# ) -> dict:
-#     """
-#     Executes a SQL query on a Cloud SQL PostgreSQL instance using psql.
-#     Automatically fetches the public IP of the instance.
-#     """
-#     user = "postgres"
-#     query = input("📥 Enter your SQL query: ").strip()
-#     try:
-#         # Step 1: Get public IP of instance
-#         host = subprocess.check_output(
-#             f"gcloud sql instances describe {instance_name} --format='get(ipAddresses[0].ipAddress)'",
-#             shell=True,
-#             text=True
-#         ).strip()
-
-#         if not host:
-#             return {"error": "❌ No public IP found for the instance. Is it authorized for external connections?"}
-
-#         # Step 2: Set password env variable
-#         env = os.environ.copy()
-#         env["PGPASSWORD"] = password
-
-#         # Step 3: Run query using psql
-#         result = subprocess.run(
-#             f"{query}",
-#             # f"psql -h {host} -U {user} -d {db_name} -c \"{query}\"",
-#             shell=True,
-#             env=env,
-#             check=True,
-#             capture_output=True,
-#             text=True
-#         )
-
-#         return {
-#             "message": f"✅ Query executed successfully.",
-#             "stdout": result.stdout
-#         }
-
-#     except subprocess.CalledProcessError as e:
-#         return {
-#             "error": f"❌ Query failed.",
-#             "stderr": e.stderr,
-#             "stdout": e.stdout
-#         }
-#     except Exception as ex:
-#         return {"error": f"⚠️ Unexpected error: {str(ex)}"}
 def run_psql_query(
     instance_name: str,
     db_name: str,
+    password: str,
     query: str,
     user: str = "postgres"
 ) -> dict:
     """
-    Executes a SQL query on a Cloud SQL PostgreSQL instance using 'gcloud sql connect'.
-    For SELECT statements, returns the query output.
+    Executes a SQL query on a Cloud SQL PostgreSQL instance using psql.
+    Automatically fetches the public IP of the instance.
     """
     try:
-        # Add \c <database> to switch to the desired database before running the query
-        full_query = f"\\c {db_name}\n{query}"
-
-        result = subprocess.run(
-            f'echo "{full_query}" | gcloud sql connect {instance_name} --user={user} --database={db_name} --quiet',
+        # Step 1: Get public IP of instance
+        host = subprocess.check_output(
+            f'gcloud sql instances describe {instance_name} --format="value(ipAddresses[0].ipAddress)"',
             shell=True,
+            text=True
+        ).strip()
+        print("Host : ", host)
+        if not host:
+            return {"error": "❌ No public IP found for the instance. Is it authorized for external connections?"}
+
+        # Step 2: Set password env variable
+        env = os.environ.copy()
+        env["PGPASSWORD"] = password
+        print("set_password", env["PGPASSWORD"])
+        # Step 3: Run query using psql
+        result = subprocess.run(
+            f'psql -h {host} -U {user} -d {db_name} -c "{query}"',
+            shell=True,
+            env=env,
             capture_output=True,
             text=True,
             check=False
         )
+        print("result", result)
 
         if result.returncode == 0:
-            if query.strip().lower().startswith("select"):
-                return {
-                    "message": "✅ SELECT query executed successfully.",
-                    "query_result": result.stdout.strip()
-                }
-            else:
-                return {
-                    "message": "✅ Query executed successfully.",
-                    "stdout": result.stdout.strip()
-                }
+            return {
+                "message": "✅ Query executed successfully.",
+                "stdout": result.stdout
+            }
         else:
             return {
                 "error": "❌ Query failed.",
-                "stdout": result.stdout.strip(),
-                "stderr": result.stderr.strip()
+                "stderr": result.stderr,
+                "stdout": result.stdout
             }
 
+    except subprocess.CalledProcessError as e:
+        return {
+            "error": f"❌ Query failed.",
+            "stderr": e.stderr,
+            "stdout": e.stdout
+        }
     except Exception as ex:
         return {"error": f"⚠️ Unexpected error: {str(ex)}"}
 
@@ -134,7 +99,8 @@ def create_sql_instance(
 
 @FunctionTool
 def connect_to_sql_instance(
-    instance_name: str
+    instance_name: str,
+    db_name : str
 ) -> dict:
     """
     Launches interactive connection to Cloud SQL via psql (user must enter password).
@@ -142,9 +108,10 @@ def connect_to_sql_instance(
     user = "postgres"
     try:
         subprocess.run(
-            f"gcloud sql connect {instance_name} --user={user}",
+            f"gcloud sql connect {instance_name} --user={user} --database={db_name}",
             shell=True,
         )
+        
         return {"message": f"🔗 Connected to instance '{instance_name}' as '{user}'."}
     except subprocess.CalledProcessError as e:
         return {"error": f"❌ Failed to connect via psql: {e}"}
