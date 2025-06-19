@@ -1,5 +1,6 @@
 from google.adk.agents import Agent
-from .tools import cloudmonitoring, secret_manager        
+from .tools import cloudmonitoring, secret_manager      
+from .tools.cloud_sql_fix import *  
 
 cloudmonitoring_agent = Agent(
     name="cloudmonitoring_agent",
@@ -19,6 +20,14 @@ use `create_secret` or `add_version`. Return the Secret resource name.""",
     tools=[*secret_manager.get_tools()],
 )
 
+cloud_sql_agent = Agent(
+    name = "cloud_sql_agent",
+    model = "gemini-2.5-flash",
+    description= "Executes PSQL Query",
+    instruction= "Use 'run_psql_query' when the user wants to run a SQL query on a Cloud SQL instance. If it is a select query then display the output.\n",
+    tools=[run_psql_query],
+)
+
 root_agent = Agent(
     name="worker_hub_agent",
     model="gemini-2.0-flash",
@@ -26,6 +35,6 @@ root_agent = Agent(
     instruction="""Handle Cloud Monitoring or Secret-Manager requests yourself,
 or delegate to the appropriate sub-agent. After each task, ask if the user needs
 anything else.""",
-    sub_agents=[cloudmonitoring_agent, secretmanager_agent],
-    tools=[*cloudmonitoring.get_tools(), *secret_manager.get_tools()],
+    sub_agents=[cloudmonitoring_agent, secretmanager_agent,cloud_sql_agent],
+    tools=[*cloudmonitoring.get_tools(), *secret_manager.get_tools(),run_psql_query],
 )

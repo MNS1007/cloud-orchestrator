@@ -1,51 +1,352 @@
+
 actions:
-cloudmonitoring.create_dashboard:
-agent: agents.worker_hub_agent
-params:
-required: [dashboard_display_name, service_name]
-optional:
-region: us-central1
 
-cloudmonitoring.create_alert:
-agent: agents.worker_hub_agent
-params: 
-required: [alert_display_name, metric_type, threshold_value]
-optional:
-comparison: COMPARISON_GT
-duration_sec: 300
+  # ───────── WorkerHub → Cloud Monitoring ─────────
+  cloudmonitoring.create_dashboard:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, dashboard_display_name, service_name]
+      optional:
+        region: us-central1
 
-secretmanager.create_secret:
-agent: agents.worker_hub_agent
-params:
-required: [secret_id, data]
-optional:
-replication_policy: automatic
+  cloudmonitoring.create_alert:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, alert_display_name, metric_type, threshold_value]
+      optional:
+        comparison: COMPARISON_GT
+        duration_sec: 300
+        region: us-central1
 
-secretmanager.add_version:
-agent: agents.worker_hub_agent
-params:
-required: [secret_id, data]
+  cloudmonitoring.delete_dashboard:
+    agent: agents.worker_hub_agent
+    params: TBD        # tool not implemented yet
 
-gke.create_cluster:
-agent: agents.gke_worker_agent
-params:
-required: [cluster_name]
-optional:
-region: us-central1 
-release_channel: REGULAR
+  # ───────── WorkerHub → Secret Manager ─────────
+  secretmanager.create_secret:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, secret_id, data]
+      optional:
+        replication_policy: automatic
 
-gke.helm_install:
-agent: agents.gke_worker_agent
-params:
-required: [cluster_name, chart_name, namespace]
-optional:
-values_file: ""
-region: us-central1
+  secretmanager.add_version:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, secret_id, data]
 
-gke.scale_deployment:
-agent: agents.gke_worker_agent
-params:
-required: [cluster_name, deployment_name, replicas]
-optional:
-namespace: default
-region: us-central1
+  secretmanager.access_secret:
+    agent: agents.worker_hub_agent
+    params: TBD
+
+  # ───────── WorkerHub → Cloud Deploy ─────────
+  clouddeploy.promote_release:
+    agent: agents.worker_hub_agent
+    params: TBD
+
+  clouddeploy.watch_rollout:
+    agent: agents.worker_hub_agent
+    params: TBD
+
+  clouddeploy.rollback_release:
+    agent: agents.worker_hub_agent
+    params: TBD
+
+  # ───────── WorkerHub → IAM ─────────
+  iam.create_sa:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id]
+      optional:
+        display_name: "Pub/Sub Service Account"
+
+  iam.grant_role:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, member, role]
+
+  iam.delete_sa:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id]
+      optional:
+        sa_name: pubsub-sa-SWAPNITA011
+
+  # ───────── WorkerHub → Dataflow ─────────
+  dataflow.launch_flex_template:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, region, job_name, template_path, parameters]
+
+  dataflow.monitor_job:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, region, job_id]
+
+  dataflow.cancel_job:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, region, job_id]
+
+  dataflow.list_jobs:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, region]
+      optional:
+        limit: 5
+
+  # ───────── WorkerHub → Compute Engine ─────────
+  compute.create_vm:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, zone, instance_name]
+      optional:
+        machine_type: e2-micro
+        image_family: debian-11
+        image_project: debian-cloud
+
+  compute.delete_vm:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, zone, instance_name]
+
+  compute.get_external_ip:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, zone, instance_name]
+
+  compute.snapshot_disk:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, zone, instance_name, snapshot_name]
+
+  # ───────── WorkerHub → BigQuery ─────────
+  bigquery.create_dataset:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, dataset_id]
+      optional:
+        location: US
+
+  bigquery.create_table:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, dataset_id, table_id, schema]
+
+  bigquery.insert_json:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, dataset_id, table_id, rows]
+
+  bigquery.export_table_gcs:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, dataset_id, table_id, gcs_uri]
+      optional:
+        export_format: CSV
+
+  # ───────── WorkerHub → Pub/Sub ─────────
+  pubsub.create_topic:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, topic_id]
+
+  pubsub.create_subscription:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, topic_id, subscription_id]
+
+  pubsub.publish:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, topic_id, message]
+
+  pubsub.pull:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, subscription_id]
+      optional:
+        max_messages: 10
+
+  # ───────── WorkerHub → Cloud Storage ─────────
+  storage.create_bucket:
+    agent: agents.worker_hub_agent
+    params: TBD
+  storage.upload_blob:
+    agent: agents.worker_hub_agent
+    params: TBD
+  storage.set_lifecycle_rule:
+    agent: agents.worker_hub_agent
+    params: TBD
+
+  # ───────── WorkerHub → Cloud SQL (Postgres) ─────────
+  cloudsql.create_instance:
+    agent: agents.worker_hub_agent
+    params: TBD
+  cloudsql.import_sql:
+    agent: agents.worker_hub_agent
+    params: TBD
+  cloudsql.set_ip:
+    agent: agents.worker_hub_agent
+    params: TBD
+  cloudsql.delete_instance:
+    agent: agents.worker_hub_agent
+    params: TBD
+
+  # ───────── WorkerHub → Cloud Logging ─────────
+  logging.create_sink:
+    agent: agents.worker_hub_agent
+    params: TBD
+  logging.list_sinks:
+    agent: agents.worker_hub_agent
+    params: TBD
+
+  # ───────── WorkerHub → Cloud Build ─────────
+  cloudbuild.build_docker:
+    agent: agents.worker_hub_agent
+    params: TBD
+  cloudbuild.clone_repo_zip:
+    agent: agents.worker_hub_agent
+    params: TBD
+
+  # ───────── WorkerHub → Artifact Registry ─────────
+  artifactregistry.create_repo:
+    agent: agents.worker_hub_agent
+    params: TBD
+  artifactregistry.push_image:
+    agent: agents.worker_hub_agent
+    params: TBD
+  artifactregistry.delete_repo:
+    agent: agents.worker_hub_agent
+    params: TBD
+
+  # ───────── WorkerHub → Cloud Run ─────────
+  cloudrun.deploy_service:
+    agent: agents.worker_hub_agent
+    params: TBD
+  cloudrun.update_env:
+    agent: agents.worker_hub_agent
+    params: TBD
+  cloudrun.pause_service:
+    agent: agents.worker_hub_agent
+    params: TBD
+  cloudrun.delete_service:
+    agent: agents.worker_hub_agent
+    params: TBD
+
+  # ───────── WorkerHub → VPC ─────────
+  vpc.manage_vpc_network:
+    agent: agents.worker_hub_agent
+    params: TBD
+  vpc.check_network_subnets:
+    agent: agents.worker_hub_agent
+    params: TBD
+  vpc.add_serverless_connector:
+    agent: agents.worker_hub_agent
+    params: TBD
+
+  # ───────── WorkerHub → Dataproc ─────────
+  dataproc.create_cluster:
+    agent: agents.worker_hub_agent
+    params: TBD
+  dataproc.run_pyspark:
+    agent: agents.worker_hub_agent
+    params: TBD
+  dataproc.delete_cluster:
+    agent: agents.worker_hub_agent
+    params: TBD
+  dataproc.submit_hivejob:
+    agent: agents.worker_hub_agent
+    params: TBD
+
+  # ───────── WorkerHub → Firestore (Native) ─────────
+  firestore.create_db:
+    agent: agents.worker_hub_agent
+    params: TBD
+  firestore.set_ttl:
+    agent: agents.worker_hub_agent
+    params: TBD
+  firestore.seed_docs:
+    agent: agents.worker_hub_agent
+    params: TBD
+  firestore.export_gcs:
+    agent: agents.worker_hub_agent
+    params: TBD
+
+  # ───────── AutopilotAgent → GKE Autopilot ─────────
+  gke.create_cluster:
+    agent: agents.autopilot_agent
+    params:
+      required: [project_id, cluster_name]
+      optional:
+        region: us-central1
+        release_channel: regular
+
+  gke.helm_install:
+    agent: agents.autopilot_agent
+    params:
+      required: [project_id, cluster_name, chart_name, namespace]
+      optional:
+        values_yaml: []
+        region: us-central1
+
+  gke.scale_deployment:
+    agent: agents.autopilot_agent
+    params:
+      required: [project_id, cluster_name, deployment_name, replicas]
+      optional:
+        namespace: default
+        region: us-central1
+
+  gke.delete_cluster:
+    agent: agents.autopilot_agent
+    params:
+      required: [project_id, cluster_name]
+      optional:
+        region: us-central1
+        wait_seconds: 600
+
+  # ───────── VertexAI Agent ─────────
+  vertex.train_custom:
+    agent: agents.vertex_ai_agent
+    params:
+      required: [project_id, job_name, python_package_uri, python_module, staging_bucket]
+      optional:
+        region: us-central1
+        machine_type: n1-standard-4
+
+  vertex.deploy_endpoint:
+    agent: agents.vertex_ai_agent
+    params:
+      required: [project_id, model_display_name, artifact_uri, endpoint_display_name]
+      optional:
+        region: us-central1
+        machine_type: n1-standard-4
+
+  vertex.batch_predict:
+    agent: agents.vertex_ai_agent
+    params:
+      required: [project_id, model_id, input_uri, output_uri]
+      optional:
+        region: us-central1
+        job_name: null
+
+  vertex.delete_endpoint:
+    agent: agents.vertex_ai_agent
+    params:
+      required: [project_id, endpoint_id]
+      optional:
+        region: us-central1
+
+  # ───────── GuardAgent stubs (built-ins) ─────────
+  guard.check_budget:
+    agent: agents.guard_agent
+    params: [project_id, daily_limit]
+
+  guard.check_quota:
+    agent: agents.guard_agent
+    params: [project_id, services]
+
+  guard.request_quota_increase:
+    agent: agents.guard_agent
+    params: [project_id, service, metric, unit, desired, region]
