@@ -1,175 +1,80 @@
-import re
-import shlex
 import subprocess
 from google.adk.tools.function_tool import FunctionTool
-
-
-import subprocess
-from google.adk.tools.function_tool import FunctionTool
-
-# --- Core Functionality ---
 
 @FunctionTool
-def read_log_entries(log_filter: str, flags: str = "") -> dict:
+def write_custom_log_entry(log_name: str, message: str, severity: str = "INFO") -> dict:
+    """
+    Writes a custom log entry using gcloud CLI.
+    """
     try:
-        output = subprocess.check_output(
-            f"gcloud logging read \"{log_filter}\" {flags}",
+        result = subprocess.run(
+            f'gcloud logging write {log_name} "{message}" --severity={severity}',
             shell=True,
+            capture_output=True,
             text=True
         )
-        return {"entries": output}
-    except subprocess.CalledProcessError as e:
+        if result.returncode == 0:
+            return {"message": "✅ Log entry created.", "stdout": result.stdout}
+        else:
+            return {"error": "❌ Failed to create log entry.", "stderr": result.stderr}
+    except Exception as e:
         return {"error": str(e)}
 
 @FunctionTool
-def write_custom_log_entry(log_name: str, message: str, flags: str = "") -> dict:
-    try:
-        subprocess.run(
-            f"gcloud logging write {log_name} \"{message}\" {flags}",
-            shell=True,
-            check=True
-        )
-        return {"message": f"📝 Log written to '{log_name}'."}
-    except subprocess.CalledProcessError as e:
-        return {"error": str(e)}
-
-@FunctionTool
-def copy_log_entries(source: str, destination: str, flags: str = "") -> dict:
-    try:
-        subprocess.run(
-            f"gcloud logging copy {source} {destination} {flags}",
-            shell=True,
-            check=True
-        )
-        return {"message": f"📤 Logs copied from '{source}' to '{destination}'."}
-    except subprocess.CalledProcessError as e:
-        return {"error": str(e)}
-
-# --- Managing Logs ---
-
-@FunctionTool
-def list_logs() -> dict:
-    try:
-        output = subprocess.check_output("gcloud logging logs list", shell=True, text=True)
-        return {"logs": output}
-    except subprocess.CalledProcessError as e:
-        return {"error": str(e)}
-
-@FunctionTool
-def delete_log(log_id: str) -> dict:
-    try:
-        subprocess.run(
-            f"gcloud logging logs delete {log_id} --quiet",
-            shell=True,
-            check=True
-        )
-        return {"message": f"🗑️ Log '{log_id}' deleted."}
-    except subprocess.CalledProcessError as e:
-        return {"error": str(e)}
-
-# --- Managing Metrics ---
-
-@FunctionTool
-# def create_log_based_metric(metric_name: str, flags: str = "") -> dict:
-#     try:
-#         subprocess.run(
-#             f"gcloud logging metrics create {metric_name} {flags}",
-#             shell=True,
-#             check=True
-#         )
-#         return {"message": f"📊 Metric '{metric_name}' created."}
-#     except subprocess.CalledProcessError as e:
-#         return {"error": str(e)}
-def create_log_based_metric(metric_name: str, log_filter: str, description: str = "") -> dict:
+def create_log_based_metric(metric_name: str, description: str, log_name: str, match_text: str) -> dict:
     """
-    Creates a log-based metric with proper validation and secure shell handling.
+    Creates a log-based metric with correct escaping for 'gcloud logging metrics create'.
     """
     try:
-        # Check gcloud availability
-        if subprocess.call("which gcloud", shell=True) != 0:
-            return {"error": "❌ 'gcloud' CLI is not installed or not in PATH."}
+        # Get current project
+        project_id = subprocess.check_output("gcloud config get-value project", shell=True).decode().strip()
 
-        # Validate metric name
-        if not re.match(r'^[a-zA-Z0-9_-]+$', metric_name):
-            return {"error": "❌ Invalid metric name. Use only letters, digits, underscores or hyphens."}
+        # Compose raw filter expression
+        raw_filter = f'logName="projects/{project_id}/logs/{log_name}" AND textPayload:"{match_text}"'
 
-        # Validate filter fields
-        if not any(f in log_filter for f in ["textPayload", "jsonPayload", "protoPayload"]):
-            return {"error": "❌ Invalid filter. Must use 'textPayload', 'jsonPayload', or 'protoPayload'."}
+        # Use a list for subprocess to avoid all quoting issues
+        cmd = [
+            "gcloud", "logging", "metrics", "create", metric_name,
+            f"--description={description}",
+            f"--log-filter={raw_filter}"
+        ]
 
-        # Securely quote shell parameters
-        quoted_filter = shlex.quote(log_filter)
-        quoted_desc = shlex.quote(description) if description else ""
-
-        # Build command
-        cmd = (
-            f"gcloud logging metrics create {metric_name} "
-            f"--log-filter={quoted_filter} "
+        result = subprocess.run(
+            cmd, 
+            shell=True,
+            capture_output=True,
+            text=True
         )
-        if description:
-            cmd += f"--description={quoted_desc}"
 
-        # Run command
-        output = subprocess.check_output(cmd, shell=True, text=True, stderr=subprocess.STDOUT)
-        return {"message": f"📊 Metric '{metric_name}' created successfully.", "details": output}
+        if result.returncode == 0:
+            return {"message": "✅ Metric created successfully.", "stdout": result.stdout}
+        else:
+            return {
+                "error": "❌ Failed to create metric.",
+                "stderr": result.stderr,
+                "full_command": " ".join(cmd)
+            }
 
-    except subprocess.CalledProcessError as e:
-        return {"error": f"🚨 Failed to create metric.\n{e.output if hasattr(e, 'output') else str(e)}"}
+    except Exception as e:
+        return {"error": str(e)}
+
 
 
 @FunctionTool
-def describe_log_metric(metric_name: str) -> dict:
+def describe_log_based_metric(metric_name: str) -> dict:
+    """
+    Describes a previously created log-based metric.
+    """
     try:
-        output = subprocess.check_output(
+        result = subprocess.run(
             f"gcloud logging metrics describe {metric_name}",
             shell=True,
+            capture_output=True,
             text=True
         )
-        return {"metric": output}
-    except subprocess.CalledProcessError as e:
+        if result.returncode == 0:
+            return {"message": "✅ Metric described successfully.", "stdout": result.stdout}
+        else:
+            return {"error": "❌ Failed to describe metric.", "stderr": result.stderr}
+    except Exception as e:
         return {"error": str(e)}
-
-@FunctionTool
-def list_log_metrics() -> dict:
-    try:
-        output = subprocess.check_output("gcloud logging metrics list", shell=True, text=True)
-        return {"metrics": output}
-    except subprocess.CalledProcessError as e:
-        return {"error": str(e)}
-
-@FunctionTool
-def update_log_metric(metric_name: str, flags: str = "") -> dict:
-    try:
-        subprocess.run(
-            f"gcloud logging metrics update {metric_name} {flags}",
-            shell=True,
-            check=True
-        )
-        return {"message": f"🔧 Metric '{metric_name}' updated."}
-    except subprocess.CalledProcessError as e:
-        return {"error": str(e)}
-
-@FunctionTool
-def delete_log_metric(metric_name: str) -> dict:
-    try:
-        subprocess.run(
-            f"gcloud logging metrics delete {metric_name} --quiet",
-            shell=True,
-            check=True
-        )
-        return {"message": f"🗑️ Metric '{metric_name}' deleted."}
-    except subprocess.CalledProcessError as e:
-        return {"error": str(e)}
-
-# | **Function**              | **Required Inputs**                           |
-# | ------------------------- | --------------------------------------------- |
-# | `read_log_entries`        | `log_filter`, *(optional)* `flags`            |
-# | `write_custom_log_entry`  | `log_name`, `message`, *(optional)* `flags`   |
-# | `copy_log_entries`        | `source`, `destination`, *(optional)* `flags` |
-# | `list_logs`               | *(none)*                                      |
-# | `delete_log`              | `log_id`                                      |
-# | `create_log_based_metric` | `metric_name`, *(optional)* `flags`           |
-# | `describe_log_metric`     | `metric_name`                                 |
-# | `list_log_metrics`        | *(none)*                                      |
-# | `update_log_metric`       | `metric_name`, *(optional)* `flags`           |
-# | `delete_log_metric`       | `metric_name`                                 |
