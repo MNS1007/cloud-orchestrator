@@ -10,10 +10,9 @@ Helm and kubectl CLIs must be on the PATH inside the agent container.
 """
 from __future__ import annotations
 
-import subprocess, tempfile, os
+import subprocess, tempfile, os, time
 from typing import Dict, List
 from google.adk.tools import FunctionTool
-from time import time
 
 
 def _sh(cmd: List[str]) -> str:
@@ -65,7 +64,7 @@ def helm_install(
     cluster_name: str,
     chart_name: str,
     namespace: str,
-    values_yaml: List[str],   
+    values_yaml: str | None = None,   
     region: str = "us-central1",
 ) -> Dict[str, str]:
     """Install or upgrade a Helm chart on the specified cluster."""
