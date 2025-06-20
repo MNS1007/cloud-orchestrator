@@ -1,0 +1,9 @@
+
+<!DOCTYPE html>
+<html><head><meta charset='utf-8'><title>GCP DAG</title>
+<script src='https://unpkg.com/cytoscape/dist/cytoscape.min.js'></script>
+<style>#cy{width:100%;height:600px;border:1px solid #ccc}</style>
+</head><body><div id='cy'></div><script>
+var elems=[{"data": {"id": "iam"}}, {"data": {"id": "vpc"}}, {"data": {"id": "storage"}}, {"data": {"id": "bigquery"}}, {"data": {"id": "compute"}}, {"data": {"id": "artifactregistry"}}, {"data": {"id": "logging"}}, {"data": {"id": "secretmanager"}}, {"data": {"id": "cloudmonitoring"}}, {"data": {"id": "dataflow"}}, {"data": {"source": "dataflow", "target": "bigquery"}}, {"data": {"source": "dataflow", "target": "storage"}}, {"data": {"source": "dataflow", "target": "compute"}}, {"data": {"source": "dataflow", "target": "logging"}}, {"data": {"source": "dataflow", "target": "cloudmonitoring"}}, {"data": {"source": "dataflow", "target": "iam"}}, {"data": {"id": "vertex"}}, {"data": {"source": "vertex", "target": "iam"}}, {"data": {"source": "vertex", "target": "storage"}}, {"data": {"source": "vertex", "target": "compute"}}, {"data": {"source": "vertex", "target": "logging"}}, {"data": {"source": "vertex", "target": "cloudmonitoring"}}, {"data": {"source": "vertex", "target": "artifactregistry"}}, {"data": {"source": "vertex", "target": "secretmanager"}}, {"data": {"source": "vertex", "target": "vpc"}}];
+var cy=cytoscape({container:document.getElementById('cy'),elements:elems,layout:{name:'breadthfirst',directed:true,padding:10},style:[{selector:'node',style:{'content':'data(id)','text-valign':'center','shape':'roundrectangle','background-color':'#a3d5ff','width':'label','height':'label','padding':'10px'}},{selector:'edge',style:{'curve-style':'bezier','target-arrow-shape':'triangle'}}]});
+</script></body></html>

@@ -1,0 +1,130 @@
+# high_level_plan.yaml
+services:
+  CloudMonitoring:
+    tools:
+      - create_dashboard
+      - create_alert
+      - delete_dashboard
+
+  SecretManager:
+    tools:
+      - create_secret
+      - add_version
+      - access_secret
+
+  CloudDeploy:
+    tools:
+      - promote_release
+      - watch_rollout
+      - rollback_release
+
+  IAM:
+    tools:
+      - create_sa
+      - grant_role
+      - delete_sa
+
+  Dataflow:
+    tools:
+      - launch_flex_template
+      - monitor_job
+      - cancel_job
+      - list_jobs
+
+  ComputeEngine:
+    tools:
+      - create_vm
+      - delete_vm
+      - get_external_ip
+      - snapshot_disk
+
+  BigQuery:
+    tools:
+      - create_dataset
+      - create_table
+      - insert_json
+      - export_table_gcs
+
+  PubSub:
+    tools:
+      - create_topic
+      - create_subscription
+      - publish
+      - pull
+
+  CloudStorage:
+    tools:
+      - create_bucket
+      - upload_blob
+      - set_lifecycle_rule
+
+  CloudSQL:
+    tools:
+      - create_instance
+      - import_sql
+      - set_ip
+      - delete_instance
+
+  CloudLogging:
+    tools:
+      - create_sink
+      - list_sinks
+
+  CloudBuild:
+    tools:
+      - build_docker
+      - clone_repo_zip
+
+  ArtifactRegistry:
+    tools:
+      - create_repo
+      - push_image
+      - delete_repo
+
+  CloudRun:
+    tools:
+      - deploy_service
+      - update_env
+      - pause_service
+      - delete_service
+
+  VPC:
+    tools:
+      - manage_vpc_network
+      - check_network_subnets
+      - add_serverless_connector
+
+  Dataproc:
+    tools:
+      - create_cluster
+      - run_pyspark
+      - delete_cluster
+      - submit_hivejob
+
+  Firestore:
+    tools:
+      - create_db
+      - set_ttl
+      - seed_docs
+      - export_gcs
+
+  GKEAutopilot:
+    tools:
+      - create_cluster
+      - helm_install
+      - scale_deployment
+      - delete_cluster
+
+  VertexAI:
+    tools:
+      - train_custom
+      - deploy_endpoint
+      - batch_predict
+      - delete_endpoint
+
+  GuardAgent:
+    tools:
+      # to be designed
+      - check_budget
+      - check_quota
+      - request_quota_increase
