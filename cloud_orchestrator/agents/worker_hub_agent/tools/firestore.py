@@ -3,6 +3,7 @@ import subprocess
 import requests
 import uuid
 from typing import Optional, List
+from datetime import datetime, timedelta
 
 @FunctionTool
 def create_firestore_db(
@@ -164,7 +165,7 @@ def set_ttl(
 ) -> dict:
     """
     Sets TTL policy on a Firestore collection. If the given TTL field is missing or invalid
-    in any document, prompts the user to add a fallback 'expiresAt' field.
+    in any document, prompts for fallback TTL using 'expiresAt' field, and adds it to all documents.
     """
     NY_TZ = zoneinfo.ZoneInfo("America/New_York")
     fallback_field = "expiresAt"
@@ -175,10 +176,7 @@ def set_ttl(
         check_cmd = f"gcloud firestore databases describe --project={project_id} --database={db_name}"
         check_proc = subprocess.run(check_cmd, shell=True, capture_output=True, text=True)
         if check_proc.returncode != 0:
-            return {
-                "status": "error",
-                "message": f"❌ Firestore DB '{db_name}' does not exist in project '{project_id}'."
-            }
+            return {"status": "error", "message": f"❌ Firestore DB '{db_name}' does not exist in project '{project_id}'."}
 
         # Step 2: Get access token
         token_proc = subprocess.run(
@@ -190,7 +188,7 @@ def set_ttl(
             "Content-Type": "application/json"
         }
 
-        # Step 3: Fetch documents (limit 100 for now)
+        # Step 3: Fetch documents
         url = (
             f"https://firestore.googleapis.com/v1/projects/{project_id}/"
             f"databases/{db_name}/documents/{collection_name}?pageSize=100"
@@ -205,41 +203,62 @@ def set_ttl(
         for doc in docs:
             fields = doc.get("fields", {})
             ttl_key = next((k for k in fields if k.lower() == ttl_field.lower()), None)
-            is_valid = (
-                ttl_key and "timestampValue" in fields.get(ttl_key, {}) and fields[ttl_key]["timestampValue"]
-            )
+            is_valid = ttl_key and "timestampValue" in fields.get(ttl_key, {}) and fields[ttl_key]["timestampValue"]
             if not is_valid:
                 missing_or_invalid.append(doc)
-
-        # Step 4: Ask user for fallback TTL if needed
+        # ttl_days=0
+        # Step 4: Handle fallback
         if missing_or_invalid:
-            return {
-                "status": "ask_use_fallback",
-                "message": (
-                    f"⚠️ Field '{ttl_field}' is missing or invalid in {len(missing_or_invalid)} documents.\n"
-                    "Do you want to apply a fallback TTL by adding a field `expiresAt` to all documents?\n"
-                    "If yes, how many days from now should the documents expire?"
-                ),
-                "next_step_hint": {
-                    "set_param": "ttl_field",
-                    "options": [fallback_field],
-                    "ask_param": "ttl_days",
-                    "ask_message": "Enter number of days until expiration for fallback TTL field 'expiresAt'."
+            if ttl_field != fallback_field :
+                return {
+                    "status": "ask_use_fallback",
+                    "message": (
+                        f"⚠️ Field '{ttl_field}' is missing or invalid in {len(missing_or_invalid)} documents.\n"
+                        "Do you want to apply a fallback TTL by adding a field `expiresAt` to all documents?\n"
+                        "If yes, how many days from now should the documents expire?"
+                    ),
+                    "next_step_hint": {
+                        "set_param": "ttl_field",
+                        "options": [fallback_field],
+                        "ask_param": "ttl_days",
+                        "ask_message": "Enter number of days until expiration for fallback TTL field 'expiresAt'."
+                    }
                 }
-            }
-# f"--field-path={ttl_field} "
-        # Step 5: Enable TTL on the given field
+        
+            # Apply fallback to all documents
+            expiry_time = datetime.now(tz=NY_TZ) + timedelta(days=ttl_days or 30)
+            iso_time = expiry_time.isoformat()
+            updated_count = 0
+
+            for doc in docs:
+                doc_name = doc["name"]
+                patch_url = f"https://firestore.googleapis.com/v1/{doc_name}?updateMask.fieldPaths={fallback_field}"
+                patch_body = {
+                    "fields": {
+                        fallback_field: {
+                            "timestampValue": iso_time
+                        }
+                    }
+                }
+                resp = requests.patch(patch_url, headers=headers, data=json.dumps(patch_body))
+                if resp.status_code == 200:
+                    updated_count += 1
+                else:
+                    messages.append(f"⚠️ Failed to update {doc_name}: {resp.text}")
+
+            messages.append(f"✅ Added '{fallback_field}' to {updated_count} documents.")
+            ttl_field = fallback_field  # Use fallback now
+
+        # Step 5: Enable TTL
         ttl_cmd = (
-            f"gcloud firestore fields ttls update expiresAt "
+            f"gcloud firestore fields ttls update {ttl_field} "
             f"--project={project_id} "
             f"--collection-group={collection_name} "
-            
-            f"--enable-ttl "
-            # f"--async"
+            f"--database={db_name} "
+            f"--enable-ttl"
         )
-
         subprocess.run(ttl_cmd, shell=True, check=True)
-        messages.append(f"✅ TTL policy enabled on field '{ttl_field}' in collection '{collection_name}'.")
+        messages.append(f"✅ TTL policy enabled on field '{ttl_field}'.")
 
         return {"status": "success", "message": "\n".join(messages)}
 
@@ -247,6 +266,6 @@ def set_ttl(
         return {"status": "error", "message": f"❌ CLI command failed: {e.stderr or str(e)}"}
     except Exception as ex:
         return {"status": "error", "message": f"❌ Unexpected error: {str(ex)}"}
-
+    
 def get_tools():
     return [create_firestore_db, set_ttl]
