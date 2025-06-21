@@ -522,6 +522,359 @@ def visualize_tool_calls(tool_calls: List[Dict[str, Any]]) -> Dict[str, str]:
 
 # ───────────────────────── Direct Tool Planning ───────────────────────── #
 @FunctionTool
+def check_quota_before_planning(project_id: str, tool_calls: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Check if the planned tool calls will fit within GCP quotas.
+    Extracts service information from tool calls and uses guard agent's check_quota function.
+    
+    Args:
+        project_id: GCP project ID
+        tool_calls: List of tool calls from build_tool_plan
+        
+    Returns:
+        dict with quota check results
+    """
+    try:
+        # Import guard agent's check_quota function
+        import sys
+        import os
+        sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'guard_agent', 'tools'))
+        from check import check_quota
+        
+        # Map tool actions to GCP services and their typical resource usage
+        service_quota_mapping = {
+            # Compute Engine
+            "compute.create_vm": {
+                "service": "compute.googleapis.com",
+                "regions": {"us-central1": {"cpus": 2, "instances": 1}},
+                "global": {"instances": 1}
+            },
+            "compute.delete_vm": {
+                "service": "compute.googleapis.com",
+                "regions": {"us-central1": {"cpus": 0, "instances": 0}},
+                "global": {"instances": 0}
+            },
+            
+            # BigQuery
+            "bigquery.create_dataset": {
+                "service": "bigquery.googleapis.com",
+                "global": {"datasets": 1}
+            },
+            "bigquery.create_table": {
+                "service": "bigquery.googleapis.com",
+                "global": {"tables": 1}
+            },
+            
+            # Pub/Sub
+            "pubsub.create_topic": {
+                "service": "pubsub.googleapis.com",
+                "global": {"topics": 1}
+            },
+            "pubsub.create_subscription": {
+                "service": "pubsub.googleapis.com",
+                "global": {"subscriptions": 1}
+            },
+            
+            # Dataflow
+            "dataflow.launch_flex_template": {
+                "service": "dataflow.googleapis.com",
+                "regions": {"us-central1": {"jobs": 1, "cpus": 4}},
+                "global": {"jobs": 1}
+            },
+            "dataflow.monitor_job": {
+                "service": "dataflow.googleapis.com",
+                "regions": {"us-central1": {"jobs": 0}},
+                "global": {"jobs": 0}
+            },
+            
+            # IAM
+            "iam.create_sa": {
+                "service": "iam.googleapis.com",
+                "global": {"service_accounts": 1}
+            },
+            "iam.grant_role": {
+                "service": "iam.googleapis.com",
+                "global": {"service_accounts": 0}
+            },
+            
+            # Cloud Run
+            "cloudrun.deploy_service": {
+                "service": "run.googleapis.com",
+                "regions": {"us-central1": {"services": 1, "revisions": 1}},
+                "global": {"services": 1}
+            },
+            "cloudrun.update_env": {
+                "service": "run.googleapis.com",
+                "regions": {"us-central1": {"revisions": 1}},
+                "global": {"services": 0}
+            },
+            
+            # VPC
+            "vpc.manage_vpc_network": {
+                "service": "compute.googleapis.com",
+                "global": {"networks": 1}
+            },
+            "vpc.check_network_subnets": {
+                "service": "compute.googleapis.com",
+                "global": {"subnetworks": 1}
+            },
+            
+            # Dataproc
+            "dataproc.create_cluster": {
+                "service": "dataproc.googleapis.com",
+                "regions": {"us-central1": {"clusters": 1, "cpus": 8}},
+                "global": {"clusters": 1}
+            },
+            "dataproc.run_pyspark": {
+                "service": "dataproc.googleapis.com",
+                "regions": {"us-central1": {"jobs": 1}},
+                "global": {"jobs": 1}
+            },
+            
+            # Firestore
+            "firestore.create_db": {
+                "service": "firestore.googleapis.com",
+                "global": {"databases": 1}
+            },
+            "firestore.seed_docs": {
+                "service": "firestore.googleapis.com",
+                "global": {"databases": 0}
+            },
+            
+            # Cloud Storage
+            "storage.create_bucket": {
+                "service": "storage.googleapis.com",
+                "global": {"buckets": 1}
+            },
+            "storage.upload_blob": {
+                "service": "storage.googleapis.com",
+                "global": {"buckets": 0}
+            },
+            
+            # Cloud SQL
+            "cloudsql.create_instance": {
+                "service": "sqladmin.googleapis.com",
+                "regions": {"us-central1": {"instances": 1}},
+                "global": {"instances": 1}
+            },
+            "cloudsql.import_sql": {
+                "service": "sqladmin.googleapis.com",
+                "regions": {"us-central1": {"instances": 0}},
+                "global": {"instances": 0}
+            },
+            "cloudsql.set_ip": {
+                "service": "sqladmin.googleapis.com",
+                "regions": {"us-central1": {"instances": 0}},
+                "global": {"instances": 0}
+            },
+            "cloudsql.delete_instance": {
+                "service": "sqladmin.googleapis.com",
+                "regions": {"us-central1": {"instances": -1}},
+                "global": {"instances": -1}
+            },
+            
+            # Cloud Logging
+            "logging.create_sink": {
+                "service": "logging.googleapis.com",
+                "global": {"sinks": 1}
+            },
+            "logging.list_sinks": {
+                "service": "logging.googleapis.com",
+                "global": {"sinks": 0}
+            },
+            
+            # Cloud Build
+            "cloudbuild.build_docker": {
+                "service": "cloudbuild.googleapis.com",
+                "global": {"builds": 1}
+            },
+            "cloudbuild.clone_repo_zip": {
+                "service": "cloudbuild.googleapis.com",
+                "global": {"builds": 1}
+            },
+            
+            # Artifact Registry
+            "artifactregistry.create_repo": {
+                "service": "artifactregistry.googleapis.com",
+                "regions": {"us-central1": {"repositories": 1}},
+                "global": {"repositories": 1}
+            },
+            "artifactregistry.push_image": {
+                "service": "artifactregistry.googleapis.com",
+                "regions": {"us-central1": {"repositories": 0}},
+                "global": {"repositories": 0}
+            },
+            "artifactregistry.delete_repo": {
+                "service": "artifactregistry.googleapis.com",
+                "regions": {"us-central1": {"repositories": -1}},
+                "global": {"repositories": -1}
+            },
+            
+            # Vertex AI
+            "vertex.train_custom": {
+                "service": "aiplatform.googleapis.com",
+                "regions": {"us-central1": {"training_jobs": 1, "cpus": 8}},
+                "global": {"training_jobs": 1}
+            },
+            "vertex.deploy_endpoint": {
+                "service": "aiplatform.googleapis.com",
+                "regions": {"us-central1": {"endpoints": 1}},
+                "global": {"endpoints": 1}
+            },
+            "vertex.batch_predict": {
+                "service": "aiplatform.googleapis.com",
+                "regions": {"us-central1": {"batch_prediction_jobs": 1}},
+                "global": {"batch_prediction_jobs": 1}
+            },
+            "vertex.delete_endpoint": {
+                "service": "aiplatform.googleapis.com",
+                "regions": {"us-central1": {"endpoints": -1}},
+                "global": {"endpoints": -1}
+            },
+            
+            # GKE Autopilot
+            "gke.create_cluster": {
+                "service": "container.googleapis.com",
+                "regions": {"us-central1": {"clusters": 1}},
+                "global": {"clusters": 1}
+            },
+            "gke.helm_install": {
+                "service": "container.googleapis.com",
+                "regions": {"us-central1": {"clusters": 0}},
+                "global": {"clusters": 0}
+            },
+            "gke.scale_deployment": {
+                "service": "container.googleapis.com",
+                "regions": {"us-central1": {"clusters": 0}},
+                "global": {"clusters": 0}
+            },
+            "gke.delete_cluster": {
+                "service": "container.googleapis.com",
+                "regions": {"us-central1": {"clusters": -1}},
+                "global": {"clusters": -1}
+            },
+            
+            # Cloud Monitoring
+            "cloudmonitoring.create_dashboard": {
+                "service": "monitoring.googleapis.com",
+                "global": {"dashboards": 1}
+            },
+            "cloudmonitoring.create_alert": {
+                "service": "monitoring.googleapis.com",
+                "global": {"alert_policies": 1}
+            },
+            "cloudmonitoring.delete_dashboard": {
+                "service": "monitoring.googleapis.com",
+                "global": {"dashboards": -1}
+            },
+            
+            # Cloud Deploy
+            "clouddeploy.promote_release": {
+                "service": "clouddeploy.googleapis.com",
+                "regions": {"us-central1": {"releases": 1}},
+                "global": {"releases": 1}
+            },
+            "clouddeploy.watch_rollout": {
+                "service": "clouddeploy.googleapis.com",
+                "regions": {"us-central1": {"rollouts": 1}},
+                "global": {"rollouts": 1}
+            },
+            "clouddeploy.rollback_release": {
+                "service": "clouddeploy.googleapis.com",
+                "regions": {"us-central1": {"releases": 0}},
+                "global": {"releases": 0}
+            },
+            
+            # Secret Manager
+            "secretmanager.create_secret": {
+                "service": "secretmanager.googleapis.com",
+                "global": {"secrets": 1}
+            },
+            "secretmanager.add_version": {
+                "service": "secretmanager.googleapis.com",
+                "global": {"secrets": 0}
+            },
+            "secretmanager.access_secret": {
+                "service": "secretmanager.googleapis.com",
+                "global": {"secrets": 0}
+            },
+            
+            # Cloud Functions
+            "cloudfunctions.deploy": {
+                "service": "cloudfunctions.googleapis.com",
+                "regions": {"us-central1": {"functions": 1}},
+                "global": {"functions": 1}
+            },
+            "cloudfunctions.update": {
+                "service": "cloudfunctions.googleapis.com",
+                "regions": {"us-central1": {"functions": 0}},
+                "global": {"functions": 0}
+            },
+            "cloudfunctions.delete": {
+                "service": "cloudfunctions.googleapis.com",
+                "regions": {"us-central1": {"functions": -1}},
+                "global": {"functions": -1}
+            }
+        }
+        
+        # Aggregate planned usage by service and region
+        planned_usage = {}
+        
+        for tool_call in tool_calls:
+            action = tool_call.get("action", "")
+            if action in service_quota_mapping:
+                service_info = service_quota_mapping[action]
+                service = service_info["service"]
+                
+                if service not in planned_usage:
+                    planned_usage[service] = {}
+                
+                # Add regional quotas
+                if "regions" in service_info:
+                    for region, metrics in service_info["regions"].items():
+                        if region not in planned_usage[service]:
+                            planned_usage[service][region] = {}
+                        
+                        for metric, value in metrics.items():
+                            if metric not in planned_usage[service][region]:
+                                planned_usage[service][region][metric] = 0
+                            planned_usage[service][region][metric] += value
+                
+                # Add global quotas
+                if "global" in service_info:
+                    if "global" not in planned_usage[service]:
+                        planned_usage[service]["global"] = {}
+                    
+                    for metric, value in service_info["global"].items():
+                        if metric not in planned_usage[service]["global"]:
+                            planned_usage[service]["global"][metric] = 0
+                        planned_usage[service]["global"][metric] += value
+        
+        # If no planned usage, return early
+        if not planned_usage:
+            return {
+                "status": "OK",
+                "message": "✅ No quota checks needed - no resource-creating actions found in plan"
+            }
+        
+        # Call the guard agent's check_quota function
+        quota_result = check_quota(project_id, planned_usage)
+        
+        return {
+            "status": quota_result.get("status", "ERROR"),
+            "message": quota_result.get("message", "Unknown error during quota check"),
+            "planned_usage": planned_usage,
+            "tool_calls_analyzed": len(tool_calls)
+        }
+        
+    except Exception as e:
+        return {
+            "status": "ERROR",
+            "message": f"❌ Failed to check quotas: {str(e)}",
+            "error": str(e)
+        }
+
+@FunctionTool
 def build_tool_plan(prompt: str) -> Dict[str, Any]:
     """
     Direct approach: Convert user prompt to ordered list of tool calls.
