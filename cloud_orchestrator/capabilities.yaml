@@ -5,22 +5,83 @@ guard.check_quota: agents.guard_agent
 
 # New to add a line for new tool we write
 
-
+# Service - VPC
 actions:
   vpc.manage_vpc_network:
     agent: agents.worker_hub_agent
     params:
       required: [vpc_name, project_id]
-      optional: [subnets, create_subnets]
+      optional: [subnets, create_subnets, list_subnets]
 
   vpc.check_network_subnets:
     agent: agents.worker_hub_agent
     params:
       required: [subnets, project_id]
 
+  vpc.add_serverless_connector:
+    agent: agents.worker_hub_agent
+    params:
+      required: [connector_name, vpc_network, region, ip_range, project_id]
+
 # Optional structure for defining subnets if needed:
 # subnets:
 #   params:
 #     required: [subnet_name, subnet_range, subnet_region]
 
+# Service - CloudRun
+  cloudrun.create_service:
+    agent: agents.worker_hub_agent
+    params:
+      required: [service_type, service_name, source_or_image, region]
+      optional: [runtime, entry_point, project_id]
+
+  cloudrun.update_env:
+    agent: agents.worker_hub_agent
+    params:
+      required: [service_type, service_name, region, env_vars]
+      optional: [project_id, source_dir]
+
+  cloudrun.pause_service:
+    agent: agents.worker_hub_agent
+    params:
+      required: [service_name, region, project_id]
+
+  cloudrun.delete_service:
+    agent: agents.worker_hub_agent
+    params:
+      required: [service_name, region, project_id]
+
+# Service - Dataproc
+  dataproc.create_cluster:
+    agent: agents.worker_hub_agent
+    params:
+      required: [cluster_name, region, num_workers, project_id]
+
+  dataproc.run_pyspark:
+    agent: agents.worker_hub_agent
+    params:
+      required: [bucket_name, pyspark_filename, cluster_name, region, project_id]
+      optional: [input_filename, output_foldername]
+
+  dataproc.delete_cluster:
+    agent: agents.worker_hub_agent
+    params:
+      required: [cluster_name, region, project_id]
+
+  dataproc.submit_hivejob:
+    agent: agents.worker_hub_agent
+    params:
+      required: [bucket_name, hql_filename, cluster_name, region, project_id]
+
+# Service - Firestore
+  firestore.create_firestore_db:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, location_id, db_name]
+      optional: [collection_name, document_data]
+
+  firestore.set_ttl:
+    agent: agents.worker_hub_agent
+    params:
+      required: [project_id, db_name, collection_name, ttl_field]
 

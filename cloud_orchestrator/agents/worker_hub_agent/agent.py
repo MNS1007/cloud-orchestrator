@@ -231,6 +231,6 @@ root_agent = Agent(
     instruction="""Handle VPC network or Firestore database or Cloud Run service or Dataproc requests yourself,
     or delegate to the appropriate sub-agent. After each task, ask if the user needs
     anything else.""",
-    sub_agents=[vpc_agent, firestore_agent],
+    sub_agents=[vpc_agent, firestore_agent, cloudrun_agent, dataproc_agent],
     tools=[*vpc.get_tools(), *firestore.get_tools(), *cloudrun.get_tools(), *dataproc.get_tools()],
 )
