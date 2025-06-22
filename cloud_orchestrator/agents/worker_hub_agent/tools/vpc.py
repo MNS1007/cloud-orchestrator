@@ -8,101 +8,146 @@ def manage_vpc_network(
     vpc_name: str,
     project_id: str,
     create_subnets: bool = False,
-    subnets: Optional[list] = None
+    subnets: Optional[list] = None,
+    list_subnets: bool = False
 ) -> dict:
     """
     Manages VPC creation and subnet addition in a GCP project.
 
+    - Enables Compute Engine API
     - Checks if the VPC exists.
-    - If it exists, offers to add subnets.
-    - If it does not exist, creates the VPC and optionally adds subnets.
-
-    Args:
-        vpc_name (str): Name of the VPC network.
-        project_id (str): Google Cloud project ID.
-        create_subnets (bool): Whether to proceed with subnet creation.
-        subnets (list): Optional list of subnet dicts (name, range, region).
-
-    Returns:
-        dict: Status and messages about VPC and subnets.
+    - Optionally lists subnets in the VPC (when list_subnets=True)
+    - Optionally adds subnets.
+    - Creates the VPC if it doesn't exist.
     """
     try:
-        # Step 1: Check if VPC exists
+        subprocess.run(
+            f"gcloud services enable compute.googleapis.com --project {project_id}",
+            check=True, shell=True
+        )
+        print("✅ Compute Engine API enabled successfully.")
+    except subprocess.CalledProcessError as e:
+        print("❌ Failed to enable Compute Engine API.")
+        return {"status": "error", "message": f"Failed to enable Compute Engine API. Details: {e}"}
+
+    try:
+        print(f"🔍 Checking if VPC '{vpc_name}' exists...")
         result = subprocess.run(
             f"gcloud compute networks describe {vpc_name} --project {project_id}",
-            shell=True,
-            capture_output=True
+            shell=True, capture_output=True
         )
 
         if result.returncode == 0:
-            # VPC already exists
+            print(f"✅ VPC '{vpc_name}' exists.")
             msg = f"✅ VPC '{vpc_name}' already exists."
+
+            if list_subnets:
+                print(f"🔍 Listing subnets in VPC '{vpc_name}'...")
+                try:
+                    cmd = (
+                        f"gcloud compute networks subnets list "
+                        f"--filter=network:{vpc_name} "
+                        f"--project={project_id} "
+                        f"--format=json"
+                    )
+                    subnets_result = subprocess.run(cmd, shell=True, capture_output=True, check=True)
+                    output = subnets_result.stdout.decode().strip()
+                    print("Raw subnets output:", output)  # Debug print
+
+                    existing_subnets = json.loads(output or "[]")
+                    print(f"✅ Found {len(existing_subnets)} subnets in VPC '{vpc_name}'.")
+
+                    if not existing_subnets:
+                        return {"status": "empty", "message": f"ℹ️ No subnets present in VPC '{vpc_name}'."}
+                    else:
+                        formatted = [
+                            {
+                                "name": s['name'],
+                                "region": s['region'].split('/')[-1],
+                                "range": s['ipCidrRange']
+                            } for s in existing_subnets
+                        ]
+
+                        # Format a message string listing the subnets (for Google ADK UI)
+                        subnet_lines = [
+                            f"- {s['name']} (Region: {s['region']}, Range: {s['range']})"
+                            for s in formatted
+                        ]
+                        subnet_message = f"✅ Found {len(formatted)} subnets in VPC '{vpc_name}':\n" + "\n".join(subnet_lines)
+
+                        # Print subnet list to terminal
+                        print(subnet_message)
+
+                        # Return message with subnet list for UI
+                        return {
+                            "status": "success",
+                            "message": subnet_message,
+                            "subnets": formatted
+                        }
+                except subprocess.CalledProcessError as e:
+                    print("❌ Failed to list subnets in VPC.")
+                    return {"status": "error", "message": f"Failed to list subnets. Details: {e}"}
+
             if create_subnets and subnets:
-                # Add subnets to existing VPC
+                print(f"➕ Creating subnets in VPC '{vpc_name}'...")
+                print(subnets)
                 try:
                     for subnet in subnets:
-                        name = subnet["name"]
-                        ip_range = subnet["range"]
-                        region = subnet["region"]
-
+                        expected_keys = {"name", "region", "range"}
+                        if set(subnet.keys()) != expected_keys:
+                            return {
+                                "status": "error",
+                                "message": (
+                                    f"Invalid subnet format: {subnet}. Each subnet must contain ONLY "
+                                    f"these keys: 'name', 'region', 'range'. No extras or alternate names allowed."
+                                )
+                            }
+                        
                         subprocess.run(
-                            f"gcloud compute networks subnets create {name} "
-                            f"--network {vpc_name} --region {region} "
-                            f"--range {ip_range} --project {project_id}",
-                            shell=True,
-                            check=True
+                            f"gcloud compute networks subnets create {subnet['name']} "
+                            f"--network {vpc_name} --region {subnet['region']} "
+                            f"--range {subnet['range']} --project {project_id}",
+                            shell=True, check=True
                         )
+                    print("✅ Subnets created successfully.")
                     return {"status": "success", "message": f"{msg} Subnets created successfully."}
                 except subprocess.CalledProcessError as e:
-                    return {"status": "error", "message": f"{msg} ❌ Failed to create subnets. Details: {e}"}
+                    print("❌ Failed to create subnets.")
+                    return {"status": "error", "message": f"{msg} Failed to create subnets. Details: {e}"}
             else:
-                return {
-                    "status": "exists",
-                    "message": f"{msg} Do you want to add subnets? Set `create_subnets=True` and pass the `subnets` list."
-                }
+                return {"status": "exists", "message": f"{msg} Use create_subnets=True to add subnets."}
 
-        # Step 2: If VPC doesn't exist, create it
+        # VPC doesn't exist — create it
+        print(f"➕ VPC '{vpc_name}' not found, creating it now...")
         subprocess.run(
-            f"gcloud services enable compute.googleapis.com --project {project_id}",
-            check=True,
-            shell=True
+            f"gcloud compute networks create {vpc_name} --subnet-mode=custom "
+            f"--bgp-routing-mode=regional --project {project_id}",
+            check=True, shell=True
         )
-
-        subprocess.run(
-            f"gcloud compute networks create {vpc_name} "
-            f"--subnet-mode=custom --bgp-routing-mode=regional "
-            f"--project {project_id}",
-            check=True,
-            shell=True
-        )
+        print("✅ VPC created.")
         msg = f"✅ VPC '{vpc_name}' created successfully."
 
         if create_subnets and subnets:
+            print("➕ Creating subnets in new VPC...")
             try:
                 for subnet in subnets:
-                    name = subnet["name"]
-                    ip_range = subnet["range"]
-                    region = subnet["region"]
-
                     subprocess.run(
-                        f"gcloud compute networks subnets create {name} "
-                        f"--network {vpc_name} --region {region} "
-                        f"--range {ip_range} --project {project_id}",
-                        shell=True,
-                        check=True
+                        f"gcloud compute networks subnets create {subnet['name']} "
+                        f"--network {vpc_name} --region {subnet['region']} "
+                        f"--range {subnet['range']} --project {project_id}",
+                        shell=True, check=True
                     )
+                print("✅ Subnets created successfully.")
                 return {"status": "success", "message": f"{msg} Subnets created successfully."}
             except subprocess.CalledProcessError as e:
-                return {"status": "error", "message": f"{msg} ❌ Failed to create subnets. Details: {e}"}
+                print("❌ Failed to create subnets.")
+                return {"status": "error", "message": f"{msg} Failed to create subnets. Details: {e}"}
         else:
-            return {
-                "status": "created",
-                "message": f"{msg} Do you want to add subnets? Set `create_subnets=True` and pass the `subnets` list."
-            }
+            return {"status": "created", "message": f"{msg} Use create_subnets=True to add subnets."}
 
     except subprocess.CalledProcessError as e:
-        return {"status": "error", "message": f"❌ Operation failed. Details: {e}"}
-
+        print("❌ Operation failed.")
+        return {"status": "error", "message": f"Operation failed. Details: {e}"}
 
 
 from typing import List, Dict
@@ -159,5 +204,59 @@ def check_network_subnets(
         return {"status": "error", "message": f"❌ Failed to check subnets. Details: {e}"}
 
 
+@FunctionTool
+def add_serverless_connector(
+    connector_name: str,
+    vpc_network: str,
+    region: str,
+    ip_range: str,
+    project_id: str
+) -> dict:
+    """
+    Creates a VPC Serverless Connector for connecting Cloud Functions,
+    App Engine, or Cloud Run to a VPC network.
+
+    Args:
+        connector_name (str): Name for the connector.
+        vpc_network (str): Name of the VPC network to connect to.
+        region (str): GCP region where the connector will be created.
+        ip_range (str): CIDR range for the connector (e.g., 10.8.0.0/28).
+        project_id (str): Google Cloud project ID.
+
+    Returns:
+        dict: Status and message indicating result of the operation.
+    """
+    try:
+        # Enable VPC Access API
+        subprocess.run(
+            f"gcloud services enable vpcaccess.googleapis.com --project {project_id}",
+            shell=True,
+            check=True
+        )
+
+        # Create the connector
+        subprocess.run(
+            f"gcloud compute networks vpc-access connectors create {connector_name} "
+            f"--network {vpc_network} "
+            f"--region {region} "
+            f"--range {ip_range} "
+            f"--project {project_id}",
+            shell=True,
+            check=True
+        )
+
+        return {
+            "status": "success",
+            "message": f"✅ Connector '{connector_name}' created successfully in region '{region}'."
+        }
+
+    except subprocess.CalledProcessError as e:
+        return {
+            "status": "error",
+            "message": f"❌ Failed to create connector '{connector_name}'. Details: {e}"
+        }
+
+
+
 def get_tools():
-    return [manage_vpc_network, check_network_subnets]
+    return [manage_vpc_network, check_network_subnets, add_serverless_connector]

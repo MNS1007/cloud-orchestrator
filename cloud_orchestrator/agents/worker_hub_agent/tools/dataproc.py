@@ -203,7 +203,73 @@ def delete_cluster(
             "details": e.stderr.strip() if e.stderr else str(e)
         }
 
+@FunctionTool
+def submit_hivejob(
+    bucket_name: str,
+    hql_filename: str,
+    cluster_name: str,
+    region: str,
+    project_id: str
+) -> dict:
+    """
+    Submits a Hive job to a Google Cloud Dataproc cluster using a .hql script stored in GCS.
+
+    Args:
+        bucket_name (str): Name of the GCS bucket (without gs://).
+        hql_filename (str): Name of the Hive script file in the bucket (e.g., query.hql).
+        cluster_name (str): Name of the Dataproc cluster.
+        region (str): GCP region where the cluster is deployed.
+        project_id (str): GCP project ID.
+
+    Returns:
+        dict: Result with status, message, and job output details.
+    """
+    try:
+        if not bucket_name or not hql_filename or not project_id:
+            return {
+                "status": "error",
+                "message": "❌ 'bucket_name', 'hql_filename', and 'project_id' are required.",
+                "details": ""
+            }
+
+        # Full path to the Hive script in GCS
+        hql_file = f"gs://{bucket_name}/{hql_filename}"
+
+        # Construct the gcloud command
+        cmd = (
+            f"gcloud dataproc jobs submit hive "
+            f"--cluster={cluster_name} "
+            f"--region={region} "
+            f"--project={project_id} "
+            f"--file={hql_file} "
+            f"--quiet"
+        )
+
+        # Execute the command
+        completed_process = subprocess.run(
+            cmd,
+            shell=True,
+            check=True,
+            capture_output=True,
+            text=True
+        )
+
+        print("✅ Hive job submitted successfully")
+
+        return {
+            "status": "success",
+            "message": f"✅ Hive job '{hql_filename}' submitted to cluster '{cluster_name}' in region '{region}'.",
+            "details": completed_process.stdout.strip()
+        }
+
+    except subprocess.CalledProcessError as e:
+        return {
+            "status": "error",
+            "message": "❌ Failed to submit Hive job.",
+            "details": e.stderr.strip() if e.stderr else str(e)
+        }
+
 
 
 def get_tools():
-    return [create_cluster, run_pyspark, delete_cluster]
+    return [create_cluster, run_pyspark, delete_cluster, submit_hivejob]

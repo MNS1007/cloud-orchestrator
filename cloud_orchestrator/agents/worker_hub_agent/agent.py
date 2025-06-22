@@ -9,29 +9,64 @@ vpc_agent = Agent(
     model="gemini-2.0-flash",
     description=(
         "Assists users in managing VPC networks on Google Cloud. "
-        "Supports creating networks, adding subnets, and checking subnet connectivity."
+        "Supports creating networks, adding subnets, checking subnet connectivity, "
+        "listing subnets on demand, and setting up serverless VPC connectors."
     ),
     instruction="""
         You are a GCP VPC networking assistant. Your job is to guide users through:
+        - Enabling the Compute Engine API if not already enabled (required for VPC operations)
         - Creating or checking VPC networks
         - Adding subnets to a VPC
+        - Listing subnets in a VPC network upon user request
         - Checking if subnets belong to the same network
+        - Creating Serverless VPC Access Connectors
 
         Use the tool `manage_vpc_network` to:
+        - Enable Compute Engine API before doing any VPC work
         - Check if a VPC exists
         - Create a VPC if it does not exist
         - Optionally create subnets after VPC creation or if VPC already exists
+        - Optionally list subnets if the user asks for it
         - Ask the user for:
           - VPC name
           - Project ID
           - Whether they want to create subnets
           - Subnet definitions (list of name, region, and IP range)
+          - Whether they want to list subnets in the VPC
+
+        - For creating subnets remember:
+        - When collecting or generating subnet details, only use the following keys: `name`, `region`, and `range`.
+        - Do not use or generate any alternate keys such as `ip_cidr_range`, `cidr`, `ipRange`, etc.
+        - Output must be in the format:
+        subnets = [{"name": "subnet-1", "region": "us-central1", "range": "10.0.0.0/24"}, ...]
+
 
         Use the tool `check_network_subnets` to:
         - Check if subnets belong to the same VPC network
         - Ask the user for:
-          - Subnet names and their regions
+          - Subnet names and each of their regions 
           - Project ID
+
+        Use the tool `add_serverless_connector` to:
+        - Create a VPC Serverless Access Connector
+        - Ask the user for:
+          - Connector name
+          - VPC network name
+          - Region
+          - IP range (e.g., 10.8.0.0/28)
+          - Project ID
+
+            - When the user wants to **list subnets** or **check if a VPC exists**, call `manage_vpc_network` with:
+            - `list_subnets=True`
+            - Do NOT ask for subnet names, regions, or ranges in this case.
+
+        - When the user wants to **create or add subnets** to a VPC, prompt for:
+            - Subnet names, regions, IP ranges
+            - Then call `manage_vpc_network` with `create_subnets=True` and `subnets=[...]`.
+
+        - When the user just wants to check a network (e.g., "check network vpc2") and not add subnets, 
+        do not ask for subnet details.
+
 
         Always infer user intent from natural language.
         If any required input is missing, prompt the user for them.
@@ -130,15 +165,15 @@ dataproc_agent = Agent(
     model="gemini-2.0-flash",
     description=(
         "Assists users in creating and deleting clusters on Google Cloud Dataproc, "
-        "and running PySpark jobs. Supports enabling APIs, provisioning and deleting clusters, "
-        "and submitting PySpark jobs with optional input/output parameters."
+        "and running PySpark or Hive jobs. Supports enabling APIs, provisioning and deleting clusters, "
+        "and submitting jobs with optional parameters."
     ),
     instruction="""
         You are a GCP Dataproc assistant. Your job is to guide users through:
 
         - Creating Dataproc clusters with required settings
         - Deleting Dataproc clusters safely
-        - Running PySpark jobs on Dataproc clusters with optional input/output arguments
+        - Running PySpark or Hive jobs on Dataproc clusters
 
         Use the tool `create_cluster` to:
         - Provision a new Dataproc cluster with a specified number of worker nodes
@@ -169,14 +204,24 @@ dataproc_agent = Agent(
           - Optional output folder path
         - Warn the user if input/output files/folders are not provided and might be required by the script
 
+        Use the tool `submit_hivejob` to:
+        - Submit Hive jobs using a .hql script stored in GCS
+        - Ask the user for:
+          - Bucket name
+          - Hive script filename (.hql)
+          - Cluster name
+          - Region
+          - GCP project ID
+
         Always infer user intent from natural language.
         If any required input is missing, prompt the user for it.
 
         If any operation fails, explain the error clearly and suggest possible fixes.
         Guide the user step-by-step to ensure successful cluster setup, deletion, or job submission.
     """,
-    tools=[*dataproc.get_tools()]  # Ensure `delete_cluster` is included in get_tools()
+    tools=[*dataproc.get_tools()]
 )
+
 
 
 root_agent = Agent(
