@@ -10,10 +10,6 @@ from .tools.planner_tool import (
     check_quota_before_planning,
 )
 
-# Ensure dependencies are installed before running:
-# python3 -m pip install matplotlib networkx
-
-# Simplified direct agent for hackathon/demo use
 direct_agent = Agent(
     name="direct_planner_v1",
     model="gemini-2.5-flash",
@@ -24,23 +20,22 @@ direct_agent = Agent(
         "1. Call build_tool_plan(prompt) to convert the user request directly to ordered tool calls.\n"
         "2. If build_tool_plan returns an error, stop and return the error message.\n"
         "3. Extract the project_id from the tool calls (look for 'project_id' in the first few tool calls).\n"
-        "4. Call check_quota_before_planning(project_id, tool_calls) to verify quotas using the guard agent.\n"
-        "5. If quota check returns BLOCK or WARN, include the quota check results in your response.\n"
-        "6. Call visualize_tool_calls(tool_calls) to create a visual representation of the execution flow.\n"
-        "7. Return both the tool plan and visualization in a user-friendly format.\n\n"
+        # "4. Call check_quota_before_planning(project_id, tool_calls) to verify quotas using the guard agent.\n"
+        # "5. If quota check returns BLOCK or WARN, include the quota check results in your response.\n"
+        "4. Call open_dag_page(tool_calls, 'tool_execution_flow.html') to create and open a visual HTML page.\n"
+        "5. Return both the tool plan and mention that visualization has been opened in the browser.\n\n"
         "**Response Format:**\n"
         "1. Brief summary of what you're setting up\n"
-        "2. Quota check results (if any issues found)\n"
-        "3. The visualization of the execution flow (from visualize_tool_calls)\n"
-        "4. The ordered list of tool calls that will be executed\n"
-        "5. Simple explanation of the execution order\n\n"
-        "**Important:** Always check quotas before proceeding with the plan. If quotas are insufficient, clearly explain the issues and provide guidance on how to resolve them.\n\n"
+        # "2. Quota check results (if any issues found)\n"
+        "2. Mention that a detailed visualization has been opened in the browser\n"
+        "3. The ordered list of tool calls that will be executed\n"
+        "4. Simple explanation of the execution order\n\n"
+        # "**Important:** Always check quotas before proceeding with the plan. If quotas are insufficient, clearly explain the issues and provide guidance on how to resolve them.\n\n"
         "Keep it simple and direct - no complex DAGs or multi-step planning."
     ),
-    tools=[build_tool_plan, check_quota_before_planning, visualize_tool_calls],
+    tools=[build_tool_plan, open_dag_page],
 )
 
-# Original complex agent (kept for reference/future use)
 cloud_agent = Agent(
     name="planner_agent_v1",
     model="gemini-2.5-flash",
@@ -51,26 +46,26 @@ cloud_agent = Agent(
         "1. Call parse_user_goal(prompt) to extract the goal and identify required GCP services.\n"
         "2. Feed its output into build_service_dag() to create the execution order DAG.\n"
         "3. Feed that DAG into expand_to_tool_plan() to generate the detailed tool plan.\n"
-        "4. Extract project_id from the tool plan and call check_quota_before_planning(project_id, tool_calls) to verify quotas.\n"
-        "5. If quota check returns BLOCK or WARN, include the quota check results in your response.\n"
-        "6. Use open_dag_page() to visualize the DAG for the user.\n"
-        "7. Return a comprehensive summary including the tool plan and execution order.\n\n"
+        # "4. Extract project_id from the tool plan and call check_quota_before_planning(project_id, tool_calls) to verify quotas.\n"
+        # "5. If quota check returns BLOCK or WARN, include the quota check results in your response.\n"
+        "4. Use open_dag_page() to visualize the DAG for the user.\n"
+        "5. Return a comprehensive summary including the tool plan and execution order.\n\n"
         "If any step returns an error key, stop and return the error message.\n\n"
         "**Important Response Format:**\n"
         "After completing the plan, provide a user-friendly response that includes:\n"
         "1. A brief summary of what you're setting up\n"
-        "2. Quota check results (if any issues found)\n"
-        "3. The inline DAG display (from expand_to_tool_plan output)\n"
-        "4. A brief explanation of the execution order\n"
-        "5. Mention that a detailed visualization has been opened in the browser\n\n"
-        "**Important:** Always check quotas before proceeding with the plan. If quotas are insufficient, clearly explain the issues and provide guidance on how to resolve them.\n\n"
+        # "2. Quota check results (if any issues found)\n"
+        "2. The inline DAG display (from expand_to_tool_plan output)\n"
+        "3. A brief explanation of the execution order\n"
+        "4. Mention that a detailed visualization has been opened in the browser\n\n"
+        # "**Important:** Always check quotas before proceeding with the plan. If quotas are insufficient, clearly explain the issues and provide guidance on how to resolve them.\n\n"
         "Make the response conversational and easy to understand for the user."
     ),
     tools=[
         parse_user_goal,
         build_service_dag,
         expand_to_tool_plan,
-        check_quota_before_planning,
+        # check_quota_before_planning,
         open_dag_page,
         create_inline_dag_display,
     ],
@@ -112,7 +107,7 @@ root_agent = Agent(
 - General request: "I'd be happy to help you with that! [provide direct answer]"
 
 Remember: Your goal is to provide the best possible assistance, whether that's direct help or smart routing to specialized agents.""",
-    sub_agents=[direct_agent],  # Using simplified direct agent
+    sub_agents=[direct_agent],  
     tools=[],
 )
 
