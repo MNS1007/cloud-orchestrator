@@ -4,22 +4,73 @@ import ast
 import json
 import yaml
 import pathlib
-import google.generativeai as genai
+# import google.generativeai as genai
 from typing import Dict, List, Any
 from google.adk.tools.function_tool import FunctionTool
 import webbrowser
+import os
+# import google.genai as genai 
 
 # Initialize Gemini API key
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+# genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+import google.genai as genai
+# genai.configure()  
+client = genai.Client()           
+# client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Load capabilities catalog
-_CAP_FILE = pathlib.Path(__file__).parents[2] / "capabilities.yaml"
-CAPS = yaml.safe_load(open(_CAP_FILE))
+# Load capabilities catalog with robust path resolution for Cloud Run
+def load_capabilities():
+    """Load capabilities.yaml with multiple fallback paths for different environments"""
+    possible_paths = [
+        # Local development path
+        pathlib.Path(__file__).parents[2] / "capabilities.yaml",
+        # Cloud Run path (when deployed)
+        pathlib.Path("/app/agents/capabilities.yaml"),
+        # Alternative Cloud Run path
+        pathlib.Path("/app/cloud_orchestrator/agents/capabilities.yaml"),
+        # Current directory fallback
+        pathlib.Path("capabilities.yaml"),
+        # Parent directory fallback
+        pathlib.Path("../capabilities.yaml"),
+    ]
+    
+    for cap_path in possible_paths:
+        if cap_path.exists():
+            try:
+                with open(cap_path, 'r') as f:
+                    return yaml.safe_load(f)
+            except Exception as e:
+                print(f"Warning: Could not load capabilities from {cap_path}: {e}")
+                continue
+    
+    # If no file found, return a minimal default
+    print("Warning: No capabilities.yaml found, using minimal default")
+    return {
+        "actions": {
+            "compute.create_vm": {"params": {"required": ["project_id", "zone", "instance_name"]}},
+            "bigquery.create_dataset": {"params": {"required": ["project_id", "dataset_id"]}},
+            "pubsub.create_topic": {"params": {"required": ["project_id", "topic_id"]}},
+            "dataflow.launch_flex_template": {"params": {"required": ["project_id", "region", "job_name"]}},
+            "iam.create_sa": {"params": {"required": ["project_id", "display_name"]}},
+            "cloudrun.deploy_service": {"params": {"required": ["project_id", "region", "service_name"]}},
+            "vpc.manage_vpc_network": {"params": {"required": ["project_id", "network_name"]}},
+            "storage.create_bucket": {"params": {"required": ["project_id", "bucket_name"]}},
+            "cloudsql.create_instance": {"params": {"required": ["project_id", "instance_name"]}},
+            "vertex.train_custom": {"params": {"required": ["project_id", "region", "job_name"]}},
+            "gke.create_cluster": {"params": {"required": ["project_id", "region", "cluster_name"]}},
+            "secretmanager.create_secret": {"params": {"required": ["project_id", "secret_id"]}},
+        }
+    }
 
-# Utility to call LLM
+CAPS = load_capabilities()
+
 def call_llm(prompt: str, model: str = "gemini-2.5-flash") -> str:
-    llm = genai.GenerativeModel(model)
-    response = llm.generate_content(prompt)
+    response = client.models.generate_content(
+        model=model,
+       
+        contents=prompt,
+
+    )
     return response.text.strip()
 
 # ───────────────────────── visualize DAG ───────────────────────── #
@@ -196,7 +247,19 @@ def open_dag_page(parsed_response: dict, filename: str = "dag_visualization.html
         with open(filename, 'w') as f:
             f.write(html)
         
-        # Try to open in browser with multiple fallback methods
+        # Check if we're in a serverless environment (Cloud Run)
+        is_serverless = os.getenv('K_SERVICE') is not None or os.getenv('PORT') is not None
+        
+        if is_serverless:
+            # In Cloud Run, we can't open a browser, so just return the file info
+            return {
+                "status": "success", 
+                "message": f"✅ HTML visualization created successfully\n📁 File location: {abs_path}\n🌐 Running in Cloud Run - file saved locally",
+                "file_path": abs_path,
+                "environment": "cloud_run"
+            }
+        
+        # Try to open in browser with multiple fallback methods (local development only)
         browser_opened = False
         file_url = f"file://{abs_path}"
         
@@ -716,11 +779,40 @@ def check_quota_before_planning(project_id: str, tool_calls: List[Dict[str, Any]
         dict with quota check results
     """
     try:
-        # Import guard agent's check_quota function
+        # Import guard agent's check_quota function with robust path resolution
         import sys
         import os
-        sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'guard_agent', 'tools'))
-        from check import check_quota
+        
+        # Try multiple possible paths for the check module
+        possible_check_paths = [
+            # Local development path
+            os.path.join(os.path.dirname(__file__), '..', '..', 'guard_agent', 'tools'),
+            # Cloud Run path
+            '/app/agents/guard_agent/tools',
+            # Alternative Cloud Run path
+            '/app/cloud_orchestrator/agents/guard_agent/tools',
+            # Current directory fallback
+            os.path.dirname(__file__),
+        ]
+        
+        check_quota = None
+        for check_path in possible_check_paths:
+            if os.path.exists(os.path.join(check_path, 'check.py')):
+                try:
+                    sys.path.insert(0, check_path)
+                    from check import check_quota
+                    break
+                except ImportError as e:
+                    print(f"Warning: Could not import check_quota from {check_path}: {e}")
+                    continue
+        
+        if check_quota is None:
+            # If check_quota is not available, return a simple response
+            return {
+                "status": "WARNING",
+                "message": "⚠️ Quota checking not available - check_quota function not found",
+                "tool_calls_analyzed": len(tool_calls)
+            }
         
         # Map tool actions to GCP services and their typical resource usage
         service_quota_mapping = {
@@ -1110,8 +1202,13 @@ Output:
 ]
 """
     
-    model = genai.GenerativeModel("gemini-2.5-flash")
-    raw = model.generate_content(f"{SYSTEM}\nUSER:\n{prompt}").text
+    model = "gemini-2.5-flash"
+    prompt = f"{SYSTEM}\nUSER:\n{prompt}"
+    raw = client.models.generate_content(
+        model=model,      
+        contents=prompt,
+    ).text
+    # raw = model.generate_content(f"{SYSTEM}\nUSER:\n{prompt}").text
     
     # Clean up the response
     clean = re.sub(r"^```[a-z]*|```$", "", raw, flags=re.IGNORECASE).strip()

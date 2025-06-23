@@ -1,27 +1,145 @@
-google-generativeai==0.3.2
-google-cloud-storage==2.10.0
-google-cloud-bigquery==3.13.0
-google-cloud-pubsub==2.18.4
-google-cloud-dataflow==2.14.0
-google-cloud-iam==2.12.0
-google-cloud-run==0.10.0
-google-cloud-compute==1.14.0
-google-cloud-sql-connector==1.2.0
-google-cloud-logging==3.8.0
-google-cloud-monitoring==2.16.0
-google-cloud-secret-manager==2.16.4
-google-cloud-artifact-registry==1.8.4
-google-cloud-build==3.14.0
-google-cloud-deploy==1.11.0
-google-cloud-functions==1.8.4
-google-cloud-dataproc==5.4.4
-google-cloud-firestore==2.13.1
-google-cloud-vpc==0.1.0
-google-cloud-vertexai==1.38.1
-google-cloud-container==2.23.0
-google-cloud-billing==1.11.0
-google-cloud-service-usage==1.8.0
+# Core Google Cloud and Vertex AI dependencies
+google-cloud-aiplatform==1.96.0
+google-adk==1.2.1
+google-generativeai==0.8.5
+google-ai-generativelanguage==0.6.15
+google-api-core==2.25.0
+google-api-python-client==2.171.0
+
+# Google Cloud services
+google-cloud-storage==2.19.0
+google-cloud-bigquery==3.34.0
+google-cloud-logging==3.12.1
+google-cloud-secret-manager==2.24.0
+google-cloud-core==2.4.3
+google-cloud-resource-manager==1.14.2
+google-cloud-speech==2.32.0
+google-cloud-trace==1.16.1
+google-cloud-appengine-logging==1.6.1
+google-cloud-audit-log==0.3.2
+
+# Authentication and core Google libraries
+google-auth==2.40.3
+google-auth-oauthlib==1.1.0
+google-auth-httplib2==0.2.0
+google-crc32c==1.7.1
+google-genai==1.19.0
+google-pasta==0.2.0
+google-resumable-media==2.7.2
+googleapis-common-protos==1.70.0
+
+# Agent Engine and ADK dependencies
+cloudpickle==3.1.1
+pydantic==2.11.5
+pydantic-settings==2.8.1
+pydantic_core==2.33.2
+overrides==7.7.0
+
+# Data processing and utilities
 requests==2.31.0
-pyyaml==6.0.1
+PyYAML==6.0.2
+python-dotenv==1.1.0
 flask==2.3.3
-flask-cors==4.0.0 
+flask-cors==5.0.1
+
+# Additional dependencies found in codebase
+pdfplumber==0.11.5
+pytest==7.4.4
+scikit-learn==1.4.2
+reportlab==4.4.2
+matplotlib==3.8.4
+
+# Additional useful packages
+numpy==1.26.4
+pandas==2.2.2
+scipy==1.11.1
+seaborn==0.13.2
+plotly==5.18.0
+
+# Web and API related
+fastapi==0.115.6
+uvicorn==0.34.0
+starlette==0.41.3
+httpx==0.28.1
+websockets==15.0.1
+
+# Data handling
+pyarrow==11.0.0
+openpyxl==3.0.10
+xlwings==0.31.1
+tabulate==0.9.0
+
+# Machine learning and AI
+torch==2.5.1
+transformers==4.49.0
+openai==1.66.5
+ultralytics==8.3.101
+
+# Development and testing
+black==24.1.1
+flake8==7.0.0
+pylint==3.1.0
+pytest-xdist==3.6.1
+
+# System and utilities
+psutil==5.9.8
+tqdm==4.66.2
+rich==13.9.4
+click==8.1.8
+typer==0.15.2
+
+# Date and time
+python-dateutil==2.8.2
+pytz==2024.1
+tzdata==2024.1
+
+# JSON and data formats
+ujson==5.10.0
+jsonschema==4.23.0
+msgpack==1.0.8
+
+# Network and HTTP
+urllib3==2.3.0
+certifi>=2024.2.2
+charset-normalizer==3.3.2
+
+# File handling
+pathlib==1.0.1
+fsspec==2025.3.0
+aiofiles==23.2.1
+
+# Database and storage
+sqlalchemy==2.0.41
+redis==5.0.1
+
+# Monitoring and logging
+prometheus-client==0.21.1
+python-json-logger==2.0.7
+
+# Security
+cryptography==42.0.5
+bcrypt==4.1.2
+PyJWT==2.8.0
+
+# Image processing
+Pillow==11.1.0
+opencv-python==4.10.0.84
+scikit-image==0.22.0
+
+# Text processing
+nltk==3.8.1
+textdistance==4.6.1
+sentencepiece==0.2.0
+
+# Configuration and settings
+pydantic-settings==2.8.1
+python-dotenv==1.1.0
+
+# Async and concurrency
+asyncio
+aiohttp==3.9.3
+aiosignal==1.3.1
+
+# Standard library dependencies (usually included, but listed for completeness)
+# datetime, zoneinfo, webbrowser, json, os, sys, subprocess, tempfile, shutil
+# pathlib, ast, re, typing, uuid, time, threading, multiprocessing 

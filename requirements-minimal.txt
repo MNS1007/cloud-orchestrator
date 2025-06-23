@@ -1,0 +1,34 @@
+# Core ADK and Google Cloud dependencies
+google-adk==1.2.1
+google-cloud-aiplatform==1.96.0
+google-generativeai==0.8.5
+google-auth==2.40.3
+google-auth-oauthlib==1.1.0
+
+# Essential Google Cloud services
+google-cloud-storage==2.19.0
+google-cloud-bigquery==3.34.0
+google-cloud-logging==3.12.1
+google-cloud-secret-manager==2.24.0
+google-cloud-core==2.4.3
+google-cloud-resource-manager==1.14.2
+
+# Core dependencies
+pydantic==2.11.5
+pydantic-settings==2.8.1
+requests==2.31.0
+PyYAML==6.0.2
+python-dotenv==1.1.0
+
+# Web server dependencies
+fastapi==0.115.6
+uvicorn==0.34.0
+starlette==0.41.3
+
+# Data processing
+numpy==1.26.4
+pandas==2.2.2
+
+# Utilities
+click==8.1.8
+typer==0.15.2 

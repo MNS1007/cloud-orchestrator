@@ -1,204 +1,186 @@
-# Cloud Orchestrator - Vercel Deployment Guide
+# Cloud Orchestrator Deployment Guide
 
-This guide will help you deploy the Cloud Orchestrator project as a shareable web application on Vercel.
+This guide provides multiple options to deploy your Cloud Orchestrator so it's accessible to others without running on your laptop.
 
-## 🚀 Quick Deployment
+## 🚀 Option 1: Google Cloud Run (Recommended)
 
-### Option 1: Deploy with Vercel CLI
+### Prerequisites
+- Google Cloud SDK installed and authenticated
+- Project `cloud4bp` with billing enabled
 
-1. **Install Vercel CLI** (if not already installed):
-   ```bash
-   npm install -g vercel
-   ```
-
-2. **Login to Vercel**:
-   ```bash
-   vercel login
-   ```
-
-3. **Deploy the project**:
-   ```bash
-   vercel --prod
-   ```
-
-4. **Follow the prompts**:
-   - Link to existing project or create new
-   - Confirm deployment settings
-   - Wait for deployment to complete
-
-### Option 2: Deploy via GitHub
-
-1. **Push your code to GitHub**:
-   ```bash
-   git add .
-   git commit -m "Add Vercel deployment configuration"
-   git push origin main
-   ```
-
-2. **Connect to Vercel**:
-   - Go to [vercel.com](https://vercel.com)
-   - Click "New Project"
-   - Import your GitHub repository
-   - Configure settings and deploy
-
-## 📁 Project Structure
-
-```
-cloud-orchestrator/
-├── api/
-│   └── index.py          # Main Vercel serverless function
-├── cloud_orchestrator/   # Your existing ADK agents
-├── vercel.json          # Vercel configuration
-├── requirements.txt     # Python dependencies
-└── DEPLOYMENT.md       # This file
-```
-
-## 🔧 Configuration Files
-
-### vercel.json
-- Configures Python runtime for API functions
-- Sets up routing for API endpoints
-- Defines function timeouts
-
-### requirements.txt
-- Lists all Python dependencies
-- Includes Google Cloud libraries
-- Specifies exact versions for consistency
-
-### api/index.py
-- Main serverless function
-- Handles HTTP requests
-- Integrates with your ADK agents
-- Provides web interface
-
-## 🌐 Features
-
-### Web Interface
-- **Modern UI**: Beautiful gradient design with glassmorphism effects
-- **Real-time Processing**: Live feedback during plan generation
-- **Responsive Design**: Works on desktop and mobile devices
-- **Interactive Elements**: Hover effects and smooth animations
-
-### API Endpoints
-- `GET /` - Main web interface
-- `POST /api/process` - Process infrastructure requests
-
-### Agent Integration
-- **Planner Agent**: Generates infrastructure plans
-- **Visualization**: Creates interactive HTML diagrams
-- **Tool Mapping**: Maps requests to GCP services
-- **Error Handling**: Comprehensive error reporting
-
-## 🔑 Environment Variables
-
-Set these in your Vercel project settings:
-
+### Quick Deployment
 ```bash
-GEMINI_API_KEY=your_gemini_api_key_here
-GOOGLE_APPLICATION_CREDENTIALS=your_service_account_key
+# Make sure you're in the project directory
+cd cloud-orchestrator
+
+# Run the deployment script
+./deploy-to-cloud-run.sh
 ```
 
-## 🚀 Usage
-
-### For Users
-1. **Visit the deployed URL**
-2. **Enter infrastructure request** in the text area
-3. **Click "Generate Infrastructure Plan"**
-4. **Review the generated plan**
-5. **Check visualization if created**
-
-### Example Requests
-- "Set up a real-time data pipeline from Pub/Sub through Dataflow into BigQuery"
-- "Create a web application with Cloud Run, Cloud SQL, and Cloud Storage"
-- "Deploy a machine learning model with Vertex AI and monitoring"
-
-## 🔍 Troubleshooting
-
-### Common Issues
-
-1. **Import Errors**:
-   - Check that all dependencies are in `requirements.txt`
-   - Verify Python path configuration in `api/index.py`
-
-2. **Timeout Errors**:
-   - Increase function timeout in `vercel.json`
-   - Optimize agent processing time
-
-3. **API Key Issues**:
-   - Verify environment variables are set
-   - Check API key permissions
-
-4. **Module Not Found**:
-   - Ensure `cloud_orchestrator` directory is included
-   - Check import paths in `api/index.py`
-
-### Debug Mode
-
-Enable debug logging by adding to `api/index.py`:
-```python
-import logging
-logging.basicConfig(level=logging.DEBUG)
-```
-
-## 📊 Monitoring
-
-### Vercel Analytics
-- View deployment status in Vercel dashboard
-- Monitor function execution times
-- Check error rates and logs
-
-### Custom Logging
-Add logging to track usage:
-```python
-import logging
-logger = logging.getLogger(__name__)
-logger.info(f"Processing request: {prompt}")
-```
-
-## 🔄 Updates
-
-### Deploy Updates
+### Manual Deployment
 ```bash
+# Set project
+gcloud config set project cloud4bp
+
+# Enable APIs
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com
+
+# Build and deploy
+gcloud builds submit --tag gcr.io/cloud4bp/cloud-orchestrator
+gcloud run deploy cloud-orchestrator \
+    --image gcr.io/cloud4bp/cloud-orchestrator \
+    --platform managed \
+    --region us-central1 \
+    --allow-unauthenticated \
+    --memory 2Gi \
+    --cpu 2
+```
+
+**Benefits:**
+- ✅ Scales automatically
+- ✅ Pay only for usage
+- ✅ HTTPS included
+- ✅ Global CDN
+- ✅ Easy updates
+
+## 🌐 Option 2: Vercel (Serverless Functions)
+
+### Prerequisites
+- Vercel CLI installed: `npm i -g vercel`
+- Vercel account
+
+### Deployment
+```bash
+# Install Vercel CLI if not already installed
+npm i -g vercel
+
+# Deploy to Vercel
 vercel --prod
 ```
 
-### Rollback
+**Benefits:**
+- ✅ Free tier available
+- ✅ Automatic HTTPS
+- ✅ Global edge network
+- ✅ Easy integration with GitHub
+
+## ☁️ Option 3: Google App Engine
+
+### Create app.yaml
+```yaml
+runtime: python311
+entrypoint: gunicorn -b :$PORT cloud_orchestrator.main:app
+
+instance_class: F2
+automatic_scaling:
+  target_cpu_utilization: 0.6
+  min_instances: 0
+  max_instances: 10
+
+env_variables:
+  GOOGLE_CLOUD_PROJECT: "cloud4bp"
+```
+
+### Deploy
 ```bash
-vercel rollback
+gcloud app deploy
 ```
 
-## 🌟 Customization
+## 🐳 Option 4: Docker + Any Cloud
 
-### UI Customization
-Edit the HTML/CSS in `api/index.py` to:
-- Change colors and styling
-- Add new features
-- Modify layout
+### Build and Push to Docker Hub
+```bash
+# Build image
+docker build -t yourusername/cloud-orchestrator .
 
-### Agent Integration
-Extend `process_with_adk()` to:
-- Add more agents
-- Include quota checking
-- Add cost estimation
-
-### API Enhancement
-Add new endpoints for:
-- Agent status checking
-- Plan history
-- User authentication
-
-## 📞 Support
-
-For issues with:
-- **Vercel Deployment**: Check Vercel documentation
-- **ADK Agents**: Review agent configuration
-- **Google Cloud**: Verify credentials and permissions
-
-## 🎉 Success!
-
-Once deployed, you'll have a shareable link like:
-```
-https://your-project.vercel.app
+# Push to Docker Hub
+docker push yourusername/cloud-orchestrator
 ```
 
-Share this URL with others to let them use your Cloud Orchestrator! 
+### Deploy to any cloud that supports Docker:
+- **DigitalOcean App Platform**
+- **AWS App Runner**
+- **Azure Container Instances**
+- **Heroku Container Registry**
+
+## 🔧 Option 5: Google Compute Engine (VM)
+
+### Create VM and Deploy
+```bash
+# Create VM
+gcloud compute instances create cloud-orchestrator \
+    --zone=us-central1-a \
+    --machine-type=e2-medium \
+    --image-family=debian-11 \
+    --image-project=debian-cloud
+
+# SSH and deploy
+gcloud compute ssh cloud-orchestrator --zone=us-central1-a
+```
+
+## 📊 Cost Comparison
+
+| Platform | Free Tier | Paid Tier | Best For |
+|----------|-----------|-----------|----------|
+| **Google Cloud Run** | 2M requests/month | $0.00002400/100ms | Production, auto-scaling |
+| **Vercel** | 100GB bandwidth | $20/month | Quick deployment, static sites |
+| **App Engine** | 28 instance hours | $0.05/hour | Traditional web apps |
+| **Compute Engine** | None | $0.047/hour | Full control, persistent |
+
+## 🔐 Security Considerations
+
+### For Production Deployments:
+1. **Authentication**: Add user authentication
+2. **HTTPS**: All platforms above provide this
+3. **Rate Limiting**: Implement API rate limiting
+4. **Environment Variables**: Store secrets securely
+5. **CORS**: Configure allowed origins
+
+### Environment Variables to Set:
+```bash
+GOOGLE_CLOUD_PROJECT=cloud4bp
+GOOGLE_CLOUD_LOCATION=us-central1
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+```
+
+## 🚀 Recommended Workflow
+
+1. **Development**: Use local `adk web agents` for testing
+2. **Staging**: Deploy to Cloud Run with `--no-allow-unauthenticated`
+3. **Production**: Deploy to Cloud Run with proper authentication
+
+## 📝 Quick Start Commands
+
+```bash
+# Stop local server
+pkill -f "adk web"
+
+# Deploy to Cloud Run
+./deploy-to-cloud-run.sh
+
+# Deploy to Vercel
+vercel --prod
+
+# Check deployment status
+gcloud run services describe cloud-orchestrator --region=us-central1
+```
+
+## 🆘 Troubleshooting
+
+### Common Issues:
+1. **Port already in use**: Kill existing processes with `pkill -f "adk web"`
+2. **Authentication errors**: Check service account permissions
+3. **Memory issues**: Increase memory allocation in deployment config
+4. **Timeout errors**: Increase timeout settings
+
+### Logs:
+```bash
+# Cloud Run logs
+gcloud logs read --service=cloud-orchestrator
+
+# Vercel logs
+vercel logs
+```
+
+Choose the option that best fits your needs and budget! 
+ 
