@@ -1,13 +1,1 @@
-{
-  "type": "service_account",
-  "project_id": "cloud-hack-462606",
-  "private_key_id": "1cce20c617b86f7dfcc5fa566a3db65979198876",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCvv66r4Hll2EKk\naKaFTlSBe6ob8fcUhjVXdcRGQqQpb8/lpK1grMKdhMhwAl7EfPGu1oHjlwKaWcNf\n1dUKyJ+QnH/azlbTl9yR3ms1vq0KrcpNaVeTCtKRDyYbSDFEOMWpL2KeyP+biSGn\naAxmGtoiIiakmBzsK25FtupkSKG1qrB/iNlFUtjFDka52mQ8v3x5obByeZ0YxO9L\nsCh3Z8S7wQLjN1lPvMdy460kiTPgLEKz8ew83oKXCu7ZzA0MtCC5qwN4FryBRt40\n3P45j1HqFz/ZbkyxPFErX4DFJJBooj/Srear27YlBSzL+ImfSve95YWSro0N5KYi\nlerC0J+fAgMBAAECggEAEsKU+aHfiOCPKeTwiYr1TaZkCnxHUfiK2cgnaGdABhr6\nXTAOlc2QhKdM4gVOv7ilRR1+sKBJAILpGQzGo1JhE1sGnCupwbJp3WRERhtmy0db\n20GNvejKK1PWTyk4oRNSU3ShxANT+Ef+Ff7u++M35QGHkHWa+MF2EZkB54HdSSU+\n7jmGaHdcTEsrueSMOaNVH5/bTdiEXhIbvs7/vxxShSXIVTESBkJMyywc0HD/zSGs\nzK/NfSeRGPq9aiCRQgszFmRynnefYbkjFlHf+J3aJPkqPWfN/6exFIbTs44MfN/Z\nyZg3Uk1UNoXiSMVBjKNFyT+H1J+omBw6AwcyDMe1wQKBgQDdPDQM/0SkhKS+C0A0\n51J/NkjOvwnMXaeTrf4fJctf1xO26VlTIPkD+h5l5Sxv4qAANCm2B92rowT/LaA7\nvB4keWZessebNw/0hAFHIfVzNFzm5G1OLw2mqKEMdDT1TXw+SW1rOljuANUHW1Gz\ngjZEhT0Bxg8dIahy8Hb8Qp3zvwKBgQDLXamNE3RPasViY939SmP4s9zOUSOxHdP+\nVBoW88G7zJliXEEHEsIjqQqpQ0XGjzYk6vsPE8xXonX/TZacBg0nwH+lI8lDIHQw\nw6UFUxXJSMnISr4AARb2eNeyKIuUm3i1c/Q5I+6X8K84XBDpMfhr9z2oQOnAdm7j\n+PQKX8jMIQKBgQCXYnPHlQE2hmFofbBgww1LaSzm9AhTZJ6fykaCr8z7duPRnNl3\nra9XzlXwqaH/qZaMrSUBn15K7VEk/+aOGYqSsNOg5zr49fOgAJgTQaSAQYt0n0hA\nYKg5q1gQepAmbvAeewY5goKJ0d3zm8RLTkWuG3IEfa+n4nkutWbl9Pu6ZwKBgDfN\ncJvcbbrpAlZ4Ls603e+9cuZOD2wnUidkbnBD3LIqdyAtTk6hkBH27Yz6f6f3XhUN\nQWymsxiM5LH0WVJgurVgteXbhvtbaWaEGMD4Rm8gAPZrw+z+X42sJQum4n4Zlyq7\nMZWITYz1py7g3GcQpikCA7IqdbmxBcaaZmR+WfvhAoGAKs28dL5cRrZw0oVvOoE/\nXJ1yu6phflg0fq/aoPz2o/FicMcZY7zX1k9i+zP+4Hke1ACW+xw/sEVfB4BpiWdb\nKagoPHCwKeF0pN2wP+7h8mQTlkanSUMB1NFFqwxZZ2x9E3T4sEEBnkDS91YKIFQO\nvBbndiHTk5LiontHBbTrJ2Q=\n-----END PRIVATE KEY-----\n",
-  "client_email": "cloud-hack-service@cloud-hack-462606.iam.gserviceaccount.com",
-  "client_id": "116037579299488865763",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/cloud-hack-service%40cloud-hack-462606.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}
+#removed due to privacy concerns
