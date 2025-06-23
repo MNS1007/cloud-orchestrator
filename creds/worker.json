@@ -1,13 +1,1 @@
-{
-  "type": "service_account",
-  "project_id": "brave-watch-462602-p4",
-  "private_key_id": "7db7e12b709b24a7b978e83ccc48a047a9f8a39d",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDqxHR2T6ofqJlg\naB/aeYlDKkyKXTbhOcyxfwu1KswpEcSpBMULJMQWJlsvbmKMToXEmIM4FfE5h1/y\n506iEVP7T8Tmns8QNDRsZZ7DNhEsbHK0bz7+xq6qbueQKPwapVTItnV+cxuxQ0RP\nRy4vsgNPt4PdrqmcaTgmGoLMDNycFy3IUsNGm+ExxN3pDtREd2zoynmIkfvXAxLf\n+5SN+T4Ng2pLhKG/Jgb39bJLTb1i/JLjIBADEs7/2CEJYctm4xttlBPjlk9FXYAR\nXjAAIeLX/wVxe3QxOJEybsBIUn1AH4Jw8jdDKz/7jSmsI6R07WabL5ru9SISZN1m\nDl3qD08LAgMBAAECggEABK2pjHoF79+SPuOUTuxBGf+Lyu4Um+Rk+dyIRTH3I5Jh\nEuUvcAtphO96vbU7bYRbEhHf+4wkZHsYJGULohsqS0XJrLbZdX801DwqL8WyDeqT\nVpko7jbTYD4Zizvl2joVOHK6YKy2jo/CmrnWZ8jqW/pSPGawppdKMSgyFxLiipG5\n6Ba4ifOg2K+bObyWFt9KRExCw/nHpy5sxih35cshqmtMFYTwyquaYlYj/ROyIvhf\nIR4KLg6vVgLNjDMUzdSnVmcHRfuINTb1efSjTrbkN0OWfBl0M2xWdGRduB1GQ8nR\n8KLtWjCwfwcfP4OiSsmy+Gwc9oITY9tKEkKU4Nj+AQKBgQD5o5nLTwAW2yE8xeVa\nSyUMlud2g1LiykWOOltcE/j4LN4opa5MuXZj5oLQp2/3BsxLS/O/w1mKPpqkQ3p/\ncDUn4uhFfZXNwV5cY9eVCWlcpE/JChYj/NFoOC40p3RHB9ZmC0IPaFrVoi++20Uw\naDm4Lb+fCzetf3FHXiVKS68UiwKBgQDwv9iZvx9buPOfTlKspx2evAZ6i5uw+Lss\nt2qAKv/8p5yIckeR3TqadIf82BGth/9Bawkq/IQSC7MvWGbnbGWWbAVBESoGRQrD\n13OKO64mH1ZK+HYcrQtyiZOiqhUFyn+oQ82PhoSeJ0JQCF2C3URj6q1DHleLt6t3\nJfgklo9/gQKBgQCNhkRQUG86hexn6cFG2Ucdxgde1sCMtiOMqGTW5LPG7pjb7mHM\nOXB23l3XMLV3FDGJlnuPgY4no6pD6cVurgxUmn0XuETPKwr10dyML5O946Ef1koL\nCO8m6IK5cx2mjzjrDQLcfUrRxmrPBrxI3y2pzrXN0qwz/gYYcbUuU43kVQKBgQDf\nyQTXTXAhu5dB8vUopiMDZTYEfXdYlqyuUUQ/JTlUqpz3vHrInMMXxdCOeG5eRvc/\n4PXhrl45xARosxzca8c2fuyXYhQVReJOzxwIV5d2ulRlVfW8jCIC8t14K+9ktana\nSERw8JKfzFB4wn3h4jnrQr6RkEfCiRVqqLGzmPyEgQKBgQCUij3qxze+T4LudW8Y\nr4bg5jTsowPal8tjYN+XrvtKsARB7VfA1Qzuom9KppvV0s3QAJk0zmkIiUwutJQE\nA0yiZzsJcJ5Z8Eqzrxn9tgFOVB1HH68pJ7JXiVNgWg5sDe9nOt4CDBO1zDjN2HpR\n5k1DMP48IX0l9pc7uPS3ZVnh7w==\n-----END PRIVATE KEY-----\n",
-  "client_email": "vellgadk@brave-watch-462602-p4.iam.gserviceaccount.com",
-  "client_id": "105666638429398633684",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/vellgadk%40brave-watch-462602-p4.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}
+#removed due to privacy concerns
