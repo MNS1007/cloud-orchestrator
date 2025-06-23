@@ -4,13 +4,14 @@ import ast
 import json
 import yaml
 import pathlib
-import google.generativeai as genai
+# import google.generativeai as genai
+from google import genai
 from typing import Dict, List, Any
-from google.adk.tools.function_tool import FunctionTool
+from google.adk.tools import FunctionTool
 import webbrowser
 
 # Initialize Gemini API key
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Load capabilities catalog
 _CAP_FILE = pathlib.Path(__file__).parents[2] / "capabilities.yaml"
@@ -18,7 +19,7 @@ CAPS = yaml.safe_load(open(_CAP_FILE))
 
 # Utility to call LLM
 def call_llm(prompt: str, model: str = "gemini-2.5-flash") -> str:
-    llm = genai.GenerativeModel(model)
+    llm = client.GenerativeModel(model)
     response = llm.generate_content(prompt)
     return response.text.strip()
 
