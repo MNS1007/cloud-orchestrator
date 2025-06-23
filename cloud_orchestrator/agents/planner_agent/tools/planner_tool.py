@@ -73,6 +73,210 @@ def call_llm(prompt: str, model: str = "gemini-2.5-flash") -> str:
     )
     return response.text.strip()
 
+# ───────────────────────── Authentication & Project Setup ───────────────────────── #
+@FunctionTool
+def check_gcloud_auth() -> Dict[str, Any]:
+    """
+    Check if user is authenticated with gcloud CLI and return authentication status.
+    """
+    try:
+        import subprocess
+        import json
+        
+        # Check if gcloud is installed and authenticated
+        result = subprocess.run(
+            ["gcloud", "auth", "list", "--filter=status:ACTIVE", "--format=json"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode == 0:
+            auth_data = json.loads(result.stdout)
+            if auth_data:
+                account = auth_data[0].get("account", "Unknown")
+                return {
+                    "status": "authenticated",
+                    "message": f"✅ User is authenticated as: {account}",
+                    "account": account,
+                    "authenticated": True
+                }
+            else:
+                return {
+                    "status": "not_authenticated",
+                    "message": "❌ User is not authenticated with gcloud CLI",
+                    "authenticated": False
+                }
+        else:
+            return {
+                "status": "error",
+                "message": f"❌ Failed to check authentication: {result.stderr}",
+                "authenticated": False,
+                "error": result.stderr
+            }
+            
+    except FileNotFoundError:
+        return {
+            "status": "gcloud_not_found",
+            "message": "❌ gcloud CLI is not installed or not in PATH",
+            "authenticated": False
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"❌ Error checking authentication: {str(e)}",
+            "authenticated": False,
+            "error": str(e)
+        }
+
+@FunctionTool
+def list_gcp_projects() -> Dict[str, Any]:
+    """
+    List all available GCP projects for the authenticated user.
+    """
+    try:
+        import subprocess
+        import json
+        
+        # List projects
+        result = subprocess.run(
+            ["gcloud", "projects", "list", "--format=json"],
+            capture_output=True,
+            text=True,
+            timeout=15
+        )
+        
+        if result.returncode == 0:
+            projects_data = json.loads(result.stdout)
+            projects = []
+            
+            for project in projects_data:
+                projects.append({
+                    "project_id": project.get("projectId", ""),
+                    "name": project.get("name", ""),
+                    "project_number": project.get("projectNumber", ""),
+                    "state": project.get("lifecycleState", "")
+                })
+            
+            return {
+                "status": "success",
+                "message": f"✅ Found {len(projects)} GCP projects",
+                "projects": projects,
+                "total_projects": len(projects)
+            }
+        else:
+            return {
+                "status": "error",
+                "message": f"❌ Failed to list projects: {result.stderr}",
+                "error": result.stderr
+            }
+            
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"❌ Error listing projects: {str(e)}",
+            "error": str(e)
+        }
+
+@FunctionTool
+def create_gcp_project(project_id: str, project_name: str) -> Dict[str, Any]:
+    """
+    Create a new GCP project with the specified project ID and name.
+    """
+    try:
+        import subprocess
+        import json
+        
+        if not project_name:
+            project_name = project_id.replace("-", " ").title()
+        
+        # Create project
+        cmd = ["gcloud", "projects", "create", project_id, "--name", project_name]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        
+        if result.returncode == 0:
+            return {
+                "status": "success",
+                "message": f"✅ Successfully created project: {project_id}",
+                "project_id": project_id,
+                "project_name": project_name
+            }
+        else:
+            return {
+                "status": "error",
+                "message": f"❌ Failed to create project: {result.stderr}",
+                "error": result.stderr
+            }
+            
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"❌ Error creating project: {str(e)}",
+            "error": str(e)
+        }
+
+@FunctionTool
+def set_active_project(project_id: str) -> Dict[str, Any]:
+    """
+    Set the specified project as the active project for gcloud CLI.
+    """
+    try:
+        import subprocess
+        
+        # Set active project
+        result = subprocess.run(
+            ["gcloud", "config", "set", "project", project_id],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode == 0:
+            return {
+                "status": "success",
+                "message": f"✅ Successfully set active project to: {project_id}",
+                "project_id": project_id
+            }
+        else:
+            return {
+                "status": "error",
+                "message": f"❌ Failed to set active project: {result.stderr}",
+                "error": result.stderr
+            }
+            
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"❌ Error setting active project: {str(e)}",
+            "error": str(e)
+        }
+
+@FunctionTool
+def setup_cloud_environment() -> Dict[str, Any]:
+    """
+    Complete cloud setup flow: check auth, list projects, and guide user through project selection.
+    Returns the selected project ID for use in planning.
+    """
+    try:
+        return {
+            "status": "setup_required",
+            "message": "🔐 **Google Cloud Setup Required**\n\nI'll help you set up Google Cloud for infrastructure planning. Let me check your authentication status first.\n\n**Next Steps:**\n1. I'll check if you're authenticated with gcloud CLI\n2. If not, I'll guide you through the login process\n3. Then I'll help you select or create a project\n4. Finally, we'll be ready for infrastructure planning\n\nLet me start by checking your authentication status...",
+            "next_step": "check_authentication",
+            "setup_flow": [
+                "check_gcloud_auth",
+                "list_gcp_projects", 
+                "project_selection",
+                "set_active_project"
+            ]
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"❌ Error in cloud setup: {str(e)}",
+            "error": str(e)
+        }
+
 # ───────────────────────── visualize DAG ───────────────────────── #
 @FunctionTool
 def open_dag_page(parsed_response: dict, filename: str = "dag_visualization.html") -> Dict[str, str]:
