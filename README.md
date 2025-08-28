@@ -1,4 +1,4 @@
-# Cloud Orchestrator
+# Cloud Orchestrator - A Quick Guide on how to add New Agents
 
 A powerful cloud operations automation platform that uses AI agents to plan and execute cloud operations. Amazing stuff!
 
